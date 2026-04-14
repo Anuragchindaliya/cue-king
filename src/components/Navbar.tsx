@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -31,16 +32,16 @@ export function Navbar() {
         <div className="flex items-center justify-between h-20">
           <div className="shrink-0">
             <span className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-snookerGreen to-goldAccent">
-              Queue King
+              Cue King
             </span>
           </div>
           
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              <a href="#" className="text-white hover:text-goldAccent transition-colors px-3 py-2 rounded-md text-sm font-medium">Home</a>
-              <a href="#" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Tables</a>
-              <a href="#" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Leaderboard</a>
-              <a href="#" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Membership</a>
+              <Link href="/" className="text-white hover:text-goldAccent transition-colors px-3 py-2 rounded-md text-sm font-medium">Home</Link>
+              <Link href="/tables" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Tables</Link>
+              <Link href="/leaderboard" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Leaderboard</Link>
+              <Link href="/membership" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Membership</Link>
             </div>
           </div>
           
@@ -75,10 +76,10 @@ export function Navbar() {
             className="md:hidden glass-panel"
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
-              <a href="#" className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</a>
-              <a href="#" className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Tables</a>
-              <a href="#" className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Leaderboard</a>
-              <a href="#" className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Membership</a>
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
+              <Link href="/tables" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Tables</Link>
+              <Link href="/leaderboard" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Leaderboard</Link>
+              <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Membership</Link>
             </div>
           </motion.div>
         )}

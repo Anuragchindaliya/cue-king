@@ -7,10 +7,6 @@ import { ArrowRight } from 'lucide-react';
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
-      {/* Background decorations */}
-      <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-snookerGreen rounded-full mix-blend-screen filter blur-[120px] opacity-40"></div>
-      <div className="absolute top-1/2 right-1/4 translate-x-1/2 translate-y-1/4 w-80 h-80 bg-goldAccent rounded-full mix-blend-screen filter blur-[120px] opacity-20"></div>
-
       <motion.div
         animate={{
           y: [0, -10, 0],
@@ -34,7 +30,7 @@ export function Hero() {
           >
             <span className="text-white">Experience </span>
             <span className="text-transparent bg-clip-text bg-linear-to-r from-snookerGreen to-goldAccent">
-              Queue King Snooker
+              Cue King Snooker
             </span>
           </motion.h1>
           
