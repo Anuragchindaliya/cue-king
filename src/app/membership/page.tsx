@@ -1,7 +1,9 @@
 'use client';
 import { motion } from 'framer-motion';
+import { useToast } from '@/components/ToastProvider';
 
 export default function MembershipPage() {
+  const { showToast } = useToast();
   return (
     <div className="relative min-h-screen pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto flex flex-col">
       <motion.div 
@@ -18,7 +20,10 @@ export default function MembershipPage() {
           <p className="max-w-2xl mx-auto text-xl text-white/70 mb-10">
             Join the elite. Get exclusive access to the VIP lounge, priority table booking, and entry to seasonal tournaments.
           </p>
-          <button className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-black transition-all duration-200 bg-goldAccent border border-white/20 rounded-full hover:bg-[#e6c95a] hover:shadow-[0_0_30px_rgba(212,175,55,0.8)] overflow-hidden">
+          <button 
+            onClick={() => showToast("Membership applications are temporarily paused for review process. Please check back next week.")}
+            className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-bold text-black transition-all duration-200 bg-goldAccent border border-white/20 rounded-full hover:bg-[#e6c95a] hover:shadow-[0_0_30px_rgba(212,175,55,0.8)] overflow-hidden"
+          >
             <span className="relative z-10">
               Apply Now
             </span>

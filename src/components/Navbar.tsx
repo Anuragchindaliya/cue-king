@@ -5,8 +5,10 @@ import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { BookingModal } from '@/components/BookingModal';
 
 export function Navbar() {
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -46,7 +48,10 @@ export function Navbar() {
           </div>
           
           <div className="hidden md:block">
-            <button className="bg-snookerGreen/80 hover:bg-snookerGreen border border-white/20 text-white px-5 py-2 rounded-full font-medium transition-all shadow-[0_0_15px_rgba(0,77,38,0.5)]">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-snookerGreen/80 hover:bg-snookerGreen border border-white/20 text-white px-5 py-2 rounded-full font-medium transition-all shadow-[0_0_15px_rgba(0,77,38,0.5)]"
+            >
               Book Table
             </button>
           </div>
@@ -84,6 +89,10 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+      <div className='absolute h-screen'>
+
+      <BookingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+      </div>
     </header>
   );
 }
