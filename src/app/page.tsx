@@ -5,6 +5,7 @@ import { Gallery } from '@/components/Gallery';
 import { Pricing } from '@/components/Pricing';
 import { Shop } from '@/components/Shop';
 import { GamingFacility } from '@/components/GamingFacility';
+import { Location } from '@/components/Location';
 
 // This is fully server rendered. 
 // Animations and interactivities are isolated in the Client Components correctly.
@@ -22,6 +23,7 @@ export default function Home() {
       
       <Shop />
       <GamingFacility />
+      <Location />
 
       {/* Footer minimal representation */}
       <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80">

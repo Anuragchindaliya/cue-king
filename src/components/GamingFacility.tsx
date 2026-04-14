@@ -3,12 +3,15 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Gamepad2, Projector, ArrowRight } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
+import { useState } from 'react';
+import { PS5BookingModal } from '@/components/PS5BookingModal';
 
 import ps5Img from '@/assets/gaming/ps5.png';
 import projectorImg from '@/assets/gaming/projector.png';
 
 export function GamingFacility() {
   const { showToast } = useToast();
+  const [ps5ModalOpen, setPs5ModalOpen] = useState(false);
 
   return (
     <section className="py-24 relative overflow-hidden backdrop-blur-sm border-t border-white/5">
@@ -32,6 +35,7 @@ export function GamingFacility() {
               src={ps5Img} 
               alt="Luxury PS5 Setup" 
               fill 
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
               placeholder="blur"
               blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
@@ -42,8 +46,8 @@ export function GamingFacility() {
                 <h3 className="text-3xl font-bold text-white">Private PS5 Lounges</h3>
               </div>
               <p className="text-white/70 mb-6 font-medium max-w-md">The absolute best controllers, ultra-wide curved screens, and luxury seating.</p>
-              <button onClick={() => showToast('PS5 Lounges will open next month. Stay tuned!')} className="flex items-center gap-2 text-snookerGreen hover:text-white transition-colors font-bold w-fit">
-                Join the Waitlist <ArrowRight size={18} />
+              <button onClick={() => setPs5ModalOpen(true)} className="flex items-center gap-2 text-snookerGreen hover:text-white transition-colors font-bold w-fit">
+                Reserve Station <ArrowRight size={18} />
               </button>
             </div>
           </motion.div>
@@ -58,6 +62,7 @@ export function GamingFacility() {
               src={projectorImg} 
               alt="Cinematic Projector Room" 
               fill 
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover transition-transform duration-700 ease-out group-hover:scale-110"
               placeholder="blur"
               blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
@@ -75,6 +80,7 @@ export function GamingFacility() {
           </motion.div>
         </div>
       </div>
+      <PS5BookingModal isOpen={ps5ModalOpen} onClose={() => setPs5ModalOpen(false)} />
     </section>
   );
 }

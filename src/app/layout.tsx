@@ -4,6 +4,7 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { CustomCursor } from '@/components/CustomCursor';
 import { ToastProvider } from '@/components/ToastProvider';
+import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -26,6 +27,7 @@ export default function RootLayout({
           <CustomCursor />
           <Navbar />
           <main>{children}</main>
+          <WhatsAppFloat />
         </ToastProvider>
       </body>
     </html>

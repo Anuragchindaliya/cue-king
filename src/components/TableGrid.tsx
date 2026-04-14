@@ -1,7 +1,8 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
+import { BookingModal } from '@/components/BookingModal';
 
 const TABLES = [
   { id: 1, name: 'Table 1', status: 'available', type: 'Premium Snooker' },
@@ -64,6 +65,15 @@ function TiltCard({ children, status }: { children: React.ReactNode; status: str
 }
 
 export function TableGrid() {
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState('pool-1');
+
+  const handleReserve = (tableType: string) => {
+    // Basic mapping: If it involves snooker, default to snooker.
+    setSelectedType(tableType.toLowerCase().includes('snooker') ? 'snooker' : 'pool-1');
+    setModalOpen(true);
+  };
+
   return (
     <section className="py-20 relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-12 text-center md:text-left">
@@ -104,14 +114,17 @@ export function TableGrid() {
             <div className="mt-4">
               <button 
                 disabled={table.status !== 'available'}
-                className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed bg-white/5 hover:bg-white/10 text-white"
+                onClick={() => handleReserve(table.type)}
+                className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/10 hover:border-snookerGreen hover:shadow-[inset_0_0_10px_rgba(0,40,0,0.5)] text-white"
               >
-                {table.status === 'available' ? 'Reserve Now' : 'Join Waitlist'}
+                {table.status === 'available' ? 'Reserve Block' : 'Occupied'}
               </button>
             </div>
           </TiltCard>
         ))}
       </div>
+
+      <BookingModal isOpen={modalOpen} initialTable={selectedType} onClose={() => setModalOpen(false)} />
     </section>
   );
 }

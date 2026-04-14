@@ -8,7 +8,10 @@ export function CustomCursor() {
   const [isVisible, setIsVisible] = useState(false);
   const [isPointerDevice, setIsPointerDevice] = useState(true);
 
+  const [mounted, setMounted] = useState(false);
+
   useEffect(() => {
+    setMounted(true);
     // Check if device supports hover
     if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) {
       setIsPointerDevice(false);
@@ -42,7 +45,7 @@ export function CustomCursor() {
     };
   }, [isVisible]);
 
-  if (!isPointerDevice || typeof window === 'undefined') return null;
+  if (!mounted || !isPointerDevice) return null;
 
   return (
     <>

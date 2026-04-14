@@ -89,10 +89,7 @@ export function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-      <div className='absolute h-screen'>
-
       <BookingModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-      </div>
     </header>
   );
 }

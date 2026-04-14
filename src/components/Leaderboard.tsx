@@ -4,11 +4,14 @@ import React from 'react';
 import { motion, useMotionTemplate, useMotionValue } from 'framer-motion';
 
 const LEADERBOARD_DATA = [
-  { id: 1, name: 'Alex "The Viper" Chen', wins: 142, skill: 'Pro Grandmaster' },
-  { id: 2, name: 'Marcus Reynolds', wins: 128, skill: 'Grandmaster' },
-  { id: 3, name: 'Sarah Jenkins', wins: 115, skill: 'Master' },
-  { id: 4, name: 'David Kim', wins: 98, skill: 'Expert' },
-  { id: 5, name: 'Elena Rostova', wins: 87, skill: 'Expert' },
+  { id: 1, name: 'Vinay', wins: 204, skill: 'Pro Grandmaster' },
+  { id: 2, name: 'Umesh', wins: 189, skill: 'Grandmaster' },
+  { id: 3, name: 'Ankush', wins: 165, skill: 'Master' },
+  { id: 4, name: 'Anurag', wins: 142, skill: 'Expert' },
+  { id: 5, name: 'Akshay', wins: 121, skill: 'Expert' },
+  { id: 6, name: 'Hunny', wins: 98, skill: 'Veteran' },
+  { id: 7, name: 'Karan', wins: 76, skill: 'Challenger' },
+  { id: 8, name: 'kalu', wins: 45, skill: 'Contender' },
 ];
 
 export function Leaderboard() {
