@@ -1,5 +1,5 @@
-import { Shop } from '@/components/Shop';
-import { Location } from '@/components/Location';
+import { Shop } from "@/components/Shop";
+import { Location } from "@/components/Location";
 
 export default function ShopPage() {
   return (

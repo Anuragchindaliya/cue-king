@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { CustomCursor } from '@/components/CustomCursor';
 import { ToastProvider } from '@/components/ToastProvider';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
+import { CallToAction } from '@/components/CallToAction';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -28,6 +29,7 @@ export default function RootLayout({
           <Navbar />
           <main>{children}</main>
           <WhatsAppFloat />
+          <CallToAction />
         </ToastProvider>
       </body>
     </html>

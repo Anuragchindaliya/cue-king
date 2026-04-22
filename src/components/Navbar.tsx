@@ -42,8 +42,10 @@ export function Navbar() {
             <div className="ml-10 flex items-baseline space-x-8">
               <Link href="/" className="text-white hover:text-goldAccent transition-colors px-3 py-2 rounded-md text-sm font-medium">Home</Link>
               <Link href="/tables" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Tables</Link>
+              <Link href="/experience" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Experience</Link>
               <Link href="/leaderboard" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Leaderboard</Link>
               <Link href="/membership" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Membership</Link>
+              <Link href="/shop" className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Shop</Link>
             </div>
           </div>
           
@@ -83,8 +85,10 @@ export function Navbar() {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
               <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
               <Link href="/tables" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Tables</Link>
+              <Link href="/experience" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
               <Link href="/leaderboard" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Leaderboard</Link>
               <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Membership</Link>
+              <Link href="/shop" onClick={() => setIsMobileMenuOpen(false)} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
             </div>
           </motion.div>
         )}

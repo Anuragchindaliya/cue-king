@@ -69,7 +69,7 @@ export function CustomCursor() {
         <div className="w-6 h-6 bg-white rounded-full relative overflow-hidden flex items-center justify-center border border-gray-200">
           <div className="absolute inset-0 bg-linear-to-br from-white via-gray-100 to-gray-400"></div>
           {/* Cue ball red dot */}
-          <div className="w-2h-2 bg-red-600 rounded-full relative z-10 shadow-inner"></div>
+          <div className="w-2 h-2 bg-red-600 rounded-full relative z-10 shadow-inner"></div>
         </div>
       </motion.div>
 

@@ -111,11 +111,14 @@ export function TableGrid() {
             
             <p className="text-sm text-white/50 mb-auto">{table.type}</p>
             
-            <div className="mt-4">
+            <div className="mt-4 relative z-50">
               <button 
                 disabled={table.status !== 'available'}
-                onClick={() => handleReserve(table.type)}
-                className="w-full py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/10 hover:border-snookerGreen hover:shadow-[inset_0_0_10px_rgba(0,40,0,0.5)] text-white"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReserve(table.type);
+                }}
+                className="w-full relative z-50 py-2 rounded-lg text-sm font-medium transition-all duration-300 border border-white/10 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer bg-white/5 hover:bg-white/10 hover:border-snookerGreen hover:shadow-[inset_0_0_10px_rgba(0,40,0,0.5)] text-white"
               >
                 {table.status === 'available' ? 'Reserve Block' : 'Occupied'}
               </button>

@@ -66,7 +66,7 @@ export function BookingModal({ isOpen, onClose, initialTable = 'pool-1' }: { isO
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[50000] flex items-center justify-center px-4 pointer-events-auto">
+        <div className="fixed inset-0 z-[5000] flex items-center justify-center px-4 pointer-events-auto">
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -86,7 +86,7 @@ export function BookingModal({ isOpen, onClose, initialTable = 'pool-1' }: { isO
 
             <button 
               onClick={onClose}
-              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-10"
+              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors z-20 "
             >
               <X size={24} />
             </button>
