@@ -6,6 +6,7 @@ import { Pricing } from '@/components/Pricing';
 import { Shop } from '@/components/Shop';
 import { GamingFacility } from '@/components/GamingFacility';
 import { Location } from '@/components/Location';
+import { Tournaments } from '@/components/Tournaments';
 
 // This is fully server rendered. 
 // Animations and interactivities are isolated in the Client Components correctly.
@@ -19,6 +20,7 @@ export default function Home() {
         <Pricing />
         <TableGrid />
         <Leaderboard />
+        <Tournaments />
       </div>
       
       <Shop />
@@ -26,8 +28,8 @@ export default function Home() {
       <Location />
 
       {/* Footer minimal representation */}
-      <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80">
-        <p>&copy; {new Date().getFullYear()} Cue King Snooker. All rights reserved.</p>
+      <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80 flex flex-col items-center gap-2">
+        <p>&copy; {new Date().getFullYear()} Cue King Snooker. All rights reserved. Created by <a href="https://www.linkedin.com/in/anurag-chindaliya/" target="_blank" rel="noopener noreferrer" className="text-snookerGreen hover:text-goldAccent transition-colors font-medium">Anurag Chindaliya</a></p>
       </footer>
     </div>
   );

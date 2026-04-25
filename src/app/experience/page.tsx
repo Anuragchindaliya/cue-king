@@ -19,7 +19,7 @@ export default function ExperiencePage() {
          <p className="mt-6 text-xl md:text-2xl text-white/50 max-w-2xl text-center drop-shadow-lg">
            Scroll down to immerse yourself in the premium snooker experience.
          </p>
-         <div className="mt-16 w-[1px] h-32 bg-linear-to-b from-snookerGreen via-snookerGreen/50 to-transparent animate-[pulse_2s_ease-in-out_infinite]" />
+         <div className="mt-16 w-1 h-32 bg-linear-to-b from-snookerGreen via-snookerGreen/50 to-transparent animate-[pulse_2s_ease-in-out_infinite]" />
       </div>
 
       <PoolScrollExperience />

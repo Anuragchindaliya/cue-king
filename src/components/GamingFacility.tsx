@@ -21,7 +21,15 @@ export function GamingFacility() {
           <h2 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-linear-to-r from-snookerGreen to-goldAccent mb-4">
             Beyond the Tables
           </h2>
-          <p className="text-xl text-white/70">Unwind in our upcoming luxury digital entertainment rooms.</p>
+          <p className="text-xl text-white/70 mb-6">Unwind in our upcoming luxury digital entertainment rooms.</p>
+          <div className="flex flex-wrap justify-center gap-4 text-sm font-semibold">
+            <span className="bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-md shadow-lg flex items-center gap-2">
+              <span className="text-blue-400">❄️</span> Fully Air Conditioned Chill Space
+            </span>
+            <span className="bg-white/10 px-4 py-2 rounded-full border border-white/5 backdrop-blur-md shadow-lg flex items-center gap-2">
+              <span className="text-red-500 animate-pulse">🛡️</span> 24/7 CCTV Secure
+            </span>
+          </div>
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 md:gap-12">

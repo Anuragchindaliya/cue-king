@@ -6,12 +6,16 @@ import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import heroImg from '@/assets/gallery/unnamed.webp';
 import { BookingModal } from '@/components/BookingModal';
+import bg from '@/assets/landing-bg/landing-img.webp';
 
 export function Hero() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center pt-20 pb-10 overflow-hidden">
+      {/* add image path */}
+      <img src={bg.src} alt="bg" className="fixed inset-0 w-full h-screen object-cover   opacity-15" />
+      <div className='absolute inset-0 bg-[radial-gradient(circle,_transparent_0%,_snookerGreen_100%)] from-snookerGreen/20 via-transparent to-transparent opacity-50 blur-3xl pointer-events-none'></div>
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid md:grid-cols-2 gap-12 items-center">
         {/* Left Side: Text */}
         <motion.div

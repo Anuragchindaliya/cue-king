@@ -8,8 +8,9 @@ export default function ShopPage() {
         <Shop />
       </div>
       <Location />
-      <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80">
+      <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80 flex flex-col items-center gap-2">
         <p>&copy; {new Date().getFullYear()} Cue King Snooker. All rights reserved.</p>
+        <p>Created by <a href="https://www.linkedin.com/in/anurag-chindaliya/" target="_blank" rel="noopener noreferrer" className="text-snookerGreen hover:text-goldAccent transition-colors font-medium">Anurag Chindaliya</a></p>
       </footer>
     </div>
   );
