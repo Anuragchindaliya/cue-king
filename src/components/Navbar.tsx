@@ -45,6 +45,7 @@ export function Navbar() {
               <Link href="/" onClick={playHitSound} className="text-white hover:text-goldAccent transition-colors px-3 py-2 rounded-md text-sm font-medium">Home</Link>
               <Link href="/tables" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Tables</Link>
               <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Experience</Link>
+              <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
               <Link href="/leaderboard" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Leaderboard</Link>
               <Link href="/membership" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Membership</Link>
               <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Shop</Link>
@@ -88,6 +89,7 @@ export function Navbar() {
               <Link href="/" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
               <Link href="/tables" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Tables</Link>
               <Link href="/experience" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
+              <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
               <Link href="/leaderboard" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Leaderboard</Link>
               <Link href="/membership" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Membership</Link>
               <Link href="/shop" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
