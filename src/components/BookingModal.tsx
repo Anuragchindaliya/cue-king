@@ -6,15 +6,15 @@ import { X, Calendar, Users } from 'lucide-react';
 import { useToast } from '@/components/ToastProvider';
 
 const TIME_SLOTS = [
-  { time: '14:00', status: 'occupied' },
-  { time: '15:00', status: 'available' },
-  { time: '16:00', status: 'available' },
-  { time: '17:00', status: 'occupied' },
-  { time: '18:00', status: 'available' },
-  { time: '19:00', status: 'occupied' },
-  { time: '20:00', status: 'available' },
-  { time: '21:00', status: 'available' },
-  { time: '22:00', status: 'available' },
+  { time: '2:00 PM', status: 'occupied' },
+  { time: '3:00 PM', status: 'available' },
+  { time: '4:00 PM', status: 'available' },
+  { time: '5:00 PM', status: 'occupied' },
+  { time: '6:00 PM', status: 'available' },
+  { time: '7:00 PM', status: 'occupied' },
+  { time: '8:00 PM', status: 'available' },
+  { time: '9:00 PM', status: 'available' },
+  { time: '10:00 PM', status: 'available' },
 ];
 
 export function BookingModal({ isOpen, onClose, initialTable = 'pool-1' }: { isOpen: boolean; onClose: () => void; initialTable?: string }) {
