@@ -5,6 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { CustomCursor } from '@/components/CustomCursor';
 import { ToastProvider } from '@/components/ToastProvider';
 import { VolumeControl } from '@/components/VolumeControl';
+import { SoundCloudPlayer } from '@/components/SoundCloudPlayer';
 import { SoundProvider } from '@/components/SoundProvider';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { CallToAction } from '@/components/CallToAction';
@@ -34,6 +35,7 @@ export default function RootLayout({
             <WhatsAppFloat />
             <CallToAction />
             <VolumeControl />
+            <SoundCloudPlayer />
           </ToastProvider>
         </SoundProvider>
       </body>
