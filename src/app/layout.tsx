@@ -4,6 +4,8 @@ import './globals.css';
 import { Navbar } from '@/components/Navbar';
 import { CustomCursor } from '@/components/CustomCursor';
 import { ToastProvider } from '@/components/ToastProvider';
+import { VolumeControl } from '@/components/VolumeControl';
+import { SoundProvider } from '@/components/SoundProvider';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { CallToAction } from '@/components/CallToAction';
 
@@ -22,15 +24,18 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body className={`${inter.variable} antialiased selection:bg-snookerGreen selection:text-white`}>
-        <ToastProvider>
-          <div className="fixed top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-snookerGreen rounded-[100%] mix-blend-screen filter blur-[120px] opacity-30 pointer-events-none -z-10"></div>
-          <div className="fixed top-3/4 right-1/4 translate-x-1/2 translate-y-1/4 w-80 h-80 bg-goldAccent rounded-[100%] mix-blend-screen filter blur-[120px] opacity-15 pointer-events-none -z-10"></div>
-          <CustomCursor />
-          <Navbar />
-          <main>{children}</main>
-          <WhatsAppFloat />
-          <CallToAction />
-        </ToastProvider>
+        <SoundProvider>
+          <ToastProvider>
+            <div className="fixed top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-snookerGreen rounded-[100%] mix-blend-screen filter blur-[120px] opacity-30 pointer-events-none -z-10"></div>
+            <div className="fixed top-3/4 right-1/4 translate-x-1/2 translate-y-1/4 w-80 h-80 bg-goldAccent rounded-[100%] mix-blend-screen filter blur-[120px] opacity-15 pointer-events-none -z-10"></div>
+            <CustomCursor />
+            <Navbar />
+            <main>{children}</main>
+            <WhatsAppFloat />
+            <CallToAction />
+            <VolumeControl />
+          </ToastProvider>
+        </SoundProvider>
       </body>
     </html>
   );

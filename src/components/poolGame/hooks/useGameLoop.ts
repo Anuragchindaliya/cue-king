@@ -75,8 +75,9 @@ export function useGameLoop(canvasRef: React.RefObject<HTMLCanvasElement | null>
        const delta = rawDelta / 16.66; // Normalize to approx 60fps multiplier for consistent physics speeds
        lastTime = time;
 
-       const canvasW = canvasRef.current!.width;
-       const canvasH = canvasRef.current!.height;
+       if (!canvasRef.current) return;
+       const canvasW = canvasRef.current.width;
+       const canvasH = canvasRef.current.height;
 
        // 1. Physics update
        // For stability we prevent huge delta jumps on tab switches
