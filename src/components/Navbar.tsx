@@ -18,7 +18,7 @@ export function Navbar() {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -39,21 +39,25 @@ export function Navbar() {
               Cue King
             </span>
           </div>
-          
+
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-8">
-              <Link href="/" onClick={playHitSound} className="text-white hover:text-goldAccent transition-colors px-3 py-2 rounded-md text-sm font-medium">Home</Link>
-              <Link href="/tables" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Tables</Link>
-              <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Experience</Link>
-              <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
-              <Link href="/leaderboard" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Leaderboard</Link>
-              <Link href="/membership" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Membership</Link>
-              <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-3 py-2 rounded-md text-sm font-medium">Shop</Link>
+            <div className="ml-10 flex items-baseline space-x-6">
+              <Link href="/" onClick={playHitSound} className="text-white hover:text-goldAccent transition-colors px-2 py-2 rounded-md text-sm font-medium">Home</Link>
+              <Link href="/clubs" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Clubs</Link>
+              <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Experience</Link>
+              <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> Game</Link>
+              <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
+              <Link href="/about" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">About</Link>
+
+              <div className="border-l border-white/20 pl-4 ml-2 flex items-baseline space-x-4">
+                <Link href="/login" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
+                <Link href="/signup" onClick={playHitSound} className="text-snookerGreen hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
+              </div>
             </div>
           </div>
-          
+
           <div className="hidden md:block">
-            <button 
+            <button
               onClick={() => { playHitSound(); setIsModalOpen(true); }}
               className="bg-snookerGreen/80 hover:bg-snookerGreen border border-white/20 text-white px-5 py-2 rounded-full font-medium transition-all shadow-[0_0_15px_rgba(0,77,38,0.5)]"
             >
@@ -87,12 +91,15 @@ export function Navbar() {
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
               <Link href="/" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
-              <Link href="/tables" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Tables</Link>
+              <Link href="/about" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">About</Link>
+              <Link href="/clubs" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Clubs</Link>
               <Link href="/experience" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
               <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
-              <Link href="/leaderboard" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Leaderboard</Link>
-              <Link href="/membership" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Membership</Link>
               <Link href="/shop" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
+              <div className="border-t border-white/10 mt-4 pt-4 pb-2">
+                <Link href="/login" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Login</Link>
+                <Link href="/signup" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-snookerGreen hover:text-snookerGreen/80 block px-3 py-2 rounded-md text-base font-medium">Sign Up</Link>
+              </div>
             </div>
           </motion.div>
         )}

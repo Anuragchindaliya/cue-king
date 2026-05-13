@@ -14,15 +14,15 @@ export default function Home() {
   return (
     <div className="flex flex-col min-h-screen">
       <Hero />
-      <Gallery />
-      
+
       <div className="relative z-10 bg-black/40 backdrop-blur-sm border-t border-white/5 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <Pricing />
         <TableGrid />
+        <Gallery />
         <Leaderboard />
         <Tournaments />
       </div>
-      
+
       <Shop />
       <GamingFacility />
       <Location />
