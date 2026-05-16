@@ -35,6 +35,9 @@ export async function generateMetadata(
   };
 }
 
+import ClientCarousel from './ClientCarousel';
+import { MapPin, Clock, Info } from 'lucide-react';
+
 export default async function ClubPage({ params }: Props) {
   const p = await params;
   const club = await getClub(p.id);
@@ -73,6 +76,16 @@ export default async function ClubPage({ params }: Props) {
     }
   };
 
+  // Combine images for Carousel
+  const allImages = [];
+  if (club.coverImage) allImages.push(`http://localhost:5001${club.coverImage}`);
+  if (club.interiorImages) club.interiorImages.forEach((img: string) => allImages.push(`http://localhost:5001${img}`));
+  if (club.tableCategories) {
+    club.tableCategories.forEach((tc: any) => {
+      if (tc.image) allImages.push(`http://localhost:5001${tc.image}`);
+    });
+  }
+
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       {/* JSON-LD Schema */}
@@ -81,38 +94,57 @@ export default async function ClubPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="max-w-5xl mx-auto">
-        <Link href="/clubs" className="text-gray-400 hover:text-white mb-8 inline-block transition-colors">
+      <div className="max-w-6xl mx-auto">
+        <Link href="/clubs" className="text-gray-400 hover:text-white mb-6 inline-block transition-colors font-medium">
           &larr; Back to Clubs
         </Link>
         
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 mb-8 backdrop-blur-sm">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-snookerGreen to-goldAccent">
+        <div className="mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-snookerGreen to-goldAccent mb-2">
             {club.name}
           </h1>
-          
-          <address className="not-italic text-gray-300 mb-6 flex flex-col gap-1">
-            <span className="font-semibold text-white">Address:</span>
-            <span>{club.location?.area || 'Area not specified'}</span>
-            <span>{club.location?.city || 'City not specified'}</span>
-          </address>
-
-          <div className="flex gap-4 text-gray-400">
-            <div className="bg-black/50 px-4 py-2 rounded-lg border border-white/5">
-              <span className="block text-sm text-gray-500">Opens</span>
-              <span className="font-medium text-white">{club.openingTime}</span>
-            </div>
-            <div className="bg-black/50 px-4 py-2 rounded-lg border border-white/5">
-              <span className="block text-sm text-gray-500">Closes</span>
-              <span className="font-medium text-white">{club.closingTime}</span>
-            </div>
+          <div className="flex items-center text-gray-400 text-sm gap-4">
+            <span className="flex items-center"><MapPin className="w-4 h-4 mr-1" /> {club.location?.area}, {club.location?.city}</span>
+            <span className="flex items-center"><Clock className="w-4 h-4 mr-1" /> {club.openingTime} - {club.closingTime}</span>
+            {club.rating && <span className="flex items-center text-goldAccent">⭐ {club.rating.toFixed(1)}</span>}
           </div>
         </div>
 
-        {/* Booking Section */}
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 backdrop-blur-sm">
-          <h2 className="text-2xl font-bold mb-6 text-white">Book a Table</h2>
-          <BookingFlow club={club} />
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Mobile Top / Desktop Right: Booking Flow */}
+          <div className="order-1 lg:order-2 lg:w-[45%]">
+            <div className="sticky top-24 bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
+              <h2 className="text-2xl font-bold mb-4 text-white flex items-center">Book a Table</h2>
+              <BookingFlow club={club} />
+            </div>
+          </div>
+
+          {/* Mobile Bottom / Desktop Left: Details & Images */}
+          <div className="order-2 lg:order-1 lg:w-[55%] space-y-8">
+            <div className="border border-white/10 rounded-2xl overflow-hidden shadow-lg bg-white/5">
+              <ClientCarousel images={allImages} />
+            </div>
+
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8 backdrop-blur-sm shadow-lg">
+              <h3 className="text-xl font-bold mb-4 flex items-center text-white"><Info className="w-5 h-5 mr-2 text-snookerGreen" /> About the Club</h3>
+              <p className="text-gray-300 leading-relaxed">
+                {club.description || 'Welcome to one of the finest pool and snooker clubs in the city. We offer premium tables, excellent service, and a great atmosphere for players of all levels.'}
+              </p>
+              
+              {club.amenities && club.amenities.length > 0 && (
+                <div className="mt-8">
+                  <h4 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Amenities</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {club.amenities.map((amenity: string, idx: number) => (
+                      <span key={idx} className="bg-black/50 border border-white/10 text-gray-300 text-xs px-3 py-1.5 rounded-full">
+                        {amenity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

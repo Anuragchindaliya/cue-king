@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 async function getInitialClubs() {
   try {
     // SSR Fetch from backend API
-    const res = await fetch('http://localhost:5001/api/clubs', {
+    const res = await fetch('http://localhost:5001/api/clubs?limit=12', {
       cache: 'no-store' // Ensure we fetch fresh data on server
     });
     const data = await res.json();

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function BookingFlow({ club }: { club: any }) {
@@ -52,6 +52,29 @@ export default function BookingFlow({ club }: { club: any }) {
     setStep(2);
   };
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pending = localStorage.getItem('pendingBooking');
+      if (pending) {
+        try {
+          const parsed = JSON.parse(pending);
+          if (parsed.clubId === club.id) {
+            setFormData({
+              tableCategoryId: parsed.tableCategoryId,
+              date: parsed.date,
+              startTime: parsed.startTime,
+              endTime: parsed.endTime,
+              durationHours: parsed.durationHours,
+            });
+            setStep(2); // Go straight to review step
+          }
+        } catch (err) {
+          console.error('Failed to parse pending booking', err);
+        }
+      }
+    }
+  }, [club.id]);
+
   const handleConfirm = async () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     
@@ -85,7 +108,17 @@ export default function BookingFlow({ club }: { club: any }) {
       });
 
       const data = await res.json();
+      
+      if (res.status === 401 || res.status === 403 || data.message?.toLowerCase().includes('token') || data.message?.toLowerCase().includes('authorized')) {
+        // Token is invalid/expired. Save state and redirect to login
+        localStorage.removeItem('token'); 
+        localStorage.setItem('pendingBooking', JSON.stringify({ ...formData, clubId: club.id }));
+        router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
+        return;
+      }
+
       if (data.success) {
+        localStorage.removeItem('pendingBooking'); // Clear it on success
         setStep(3);
       } else {
         alert('Failed to book: ' + data.message);
