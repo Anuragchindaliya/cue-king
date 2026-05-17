@@ -3,11 +3,21 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAuthStore } from '@/store/authStore';
 
 function SignupContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/clubs';
+  const tokenFromUrl = searchParams.get('token');
+  const login = useAuthStore((state) => state.login);
+
+  useEffect(() => {
+    if (tokenFromUrl) {
+      login(tokenFromUrl);
+      router.push(returnUrl);
+    }
+  }, [tokenFromUrl, login, router, returnUrl]);
 
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
@@ -19,8 +29,7 @@ function SignupContent() {
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignUp = () => {
-    localStorage.setItem('token', 'mock_google_token');
-    router.push(returnUrl);
+    window.location.href = 'http://localhost:5001/api/auth/google';
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -43,7 +52,7 @@ function SignupContent() {
       const data = await res.json();
       
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
+        login(data.data.token, data.data.user);
         // If club owner, maybe redirect to create club if they don't have one?
         if (role === 'CLUB_OWNER' && returnUrl === '/clubs') {
            router.push('/owner/club/new');

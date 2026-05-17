@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import { BookingModal } from '@/components/BookingModal';
 import { useHitSound } from '@/hooks/useHitSound';
 
@@ -12,7 +14,18 @@ export function Navbar() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const playHitSound = useHitSound();
+  const router = useRouter();
+
+  const { isAuthenticated, user, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    playHitSound();
+    logout();
+    setIsProfileMenuOpen(false);
+    router.push('/');
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,9 +62,52 @@ export function Navbar() {
               <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
 
 
-              <div className="border-l border-white/20 pl-4 ml-2 flex items-baseline space-x-4">
-                <Link href="/login" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
-                <Link href="/signup" onClick={playHitSound} className="text-snookerGreen hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
+              <div className="border-l border-white/20 pl-4 ml-2 flex items-baseline space-x-4 relative">
+                {isAuthenticated ? (
+                  <div className="relative">
+                    <button
+                      onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                      className="flex items-center gap-2 text-white/90 hover:text-white transition-colors bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-full border border-white/10"
+                    >
+                      <User className="w-4 h-4" />
+                      <span className="text-sm font-medium">{user?.name || user?.email || 'Profile'}</span>
+                      <ChevronDown className={`w-4 h-4 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    <AnimatePresence>
+                      {isProfileMenuOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          className="absolute right-0 mt-2 w-48 bg-[#111] border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-md z-50"
+                        >
+                          <div className="p-2 border-b border-white/5">
+                            <p className="text-xs text-gray-400 px-2 truncate">{user?.email}</p>
+                          </div>
+                          <div className="p-1">
+                            {user?.role === 'CLUB_OWNER' && (
+                              <Link href="/owner/club/new" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                Add Club
+                              </Link>
+                            )}
+                            <button
+                              onClick={handleLogout}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 rounded-lg transition-colors text-left"
+                            >
+                              <LogOut className="w-4 h-4" />
+                              Logout
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
+                    <Link href="/signup" onClick={playHitSound} className="text-snookerGreen hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -96,8 +152,20 @@ export function Navbar() {
               <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
               <Link href="/shop" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
               <div className="border-t border-white/10 mt-4 pt-4 pb-2">
-                <Link href="/login" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Login</Link>
-                <Link href="/signup" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-snookerGreen hover:text-snookerGreen/80 block px-3 py-2 rounded-md text-base font-medium">Sign Up</Link>
+                {isAuthenticated ? (
+                  <>
+                    <div className="px-3 py-2 text-sm text-gray-400 mb-2 truncate border-b border-white/5">{user?.email}</div>
+                    {user?.role === 'CLUB_OWNER' && (
+                      <Link href="/owner/club/new" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Add Club</Link>
+                    )}
+                    <button onClick={handleLogout} className="text-red-400 hover:text-red-300 block w-full text-left px-3 py-2 rounded-md text-base font-medium">Logout</button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Login</Link>
+                    <Link href="/signup" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-snookerGreen hover:text-snookerGreen/80 block px-3 py-2 rounded-md text-base font-medium">Sign Up</Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

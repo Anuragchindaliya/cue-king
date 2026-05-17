@@ -72,7 +72,7 @@ export default function OwnerDashboard() {
             {clubs.map(club => (
               <div key={club.id} className="bg-white/5 border border-white/10 rounded-xl p-6 relative">
                 {club.coverImage && (
-                  <div className="h-40 w-full mb-4 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(http://localhost:5001${club.coverImage})` }} />
+                  <div className="h-40 w-full mb-4 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url('http://localhost:5001${club.coverImage}')` }} />
                 )}
                 <h3 className="text-xl font-bold text-white mb-2">{club.name}</h3>
                 <p className="text-gray-400 text-sm mb-4 line-clamp-2">{club.description || 'No description provided'}</p>

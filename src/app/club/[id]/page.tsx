@@ -98,7 +98,7 @@ export default async function ClubPage({ params }: Props) {
         <Link href="/clubs" className="text-gray-400 hover:text-white mb-6 inline-block transition-colors font-medium">
           &larr; Back to Clubs
         </Link>
-        
+
         <div className="mb-6">
           <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-snookerGreen to-goldAccent mb-2">
             {club.name}
@@ -130,7 +130,7 @@ export default async function ClubPage({ params }: Props) {
               <p className="text-gray-300 leading-relaxed">
                 {club.description || 'Welcome to one of the finest pool and snooker clubs in the city. We offer premium tables, excellent service, and a great atmosphere for players of all levels.'}
               </p>
-              
+
               {club.amenities && club.amenities.length > 0 && (
                 <div className="mt-8">
                   <h4 className="text-sm font-semibold text-gray-400 mb-3 uppercase tracking-wider">Amenities</h4>

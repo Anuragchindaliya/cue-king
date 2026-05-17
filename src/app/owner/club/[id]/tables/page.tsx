@@ -162,7 +162,7 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
                 <div key={table.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {table.image ? (
-                      <div className="w-16 h-16 rounded bg-cover bg-center" style={{ backgroundImage: `url(http://localhost:5001${table.image})` }} />
+                      <div className="w-16 h-16 rounded bg-cover bg-center" style={{ backgroundImage: `url('http://localhost:5001${table.image}')` }} />
                     ) : (
                       <div className="w-16 h-16 rounded bg-white/10 flex items-center justify-center text-xs text-gray-500">No Img</div>
                     )}

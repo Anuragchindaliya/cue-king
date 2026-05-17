@@ -11,6 +11,7 @@ import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { CallToAction } from '@/components/CallToAction';
 
 import { Footer } from '@/components/Footer';
+import { ClientProviders } from '@/providers/ClientProviders';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -32,11 +33,13 @@ export default function RootLayout({
             <div className="fixed top-1/4 left-1/4 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-snookerGreen rounded-[100%] mix-blend-screen filter blur-[120px] opacity-30 pointer-events-none -z-10"></div>
             <div className="fixed top-3/4 right-1/4 translate-x-1/2 translate-y-1/4 w-80 h-80 bg-goldAccent rounded-[100%] mix-blend-screen filter blur-[120px] opacity-15 pointer-events-none -z-10"></div>
             <CustomCursor />
-            <Navbar />
-            <main>{children}</main>
-            <WhatsAppFloat />
-            <CallToAction />
-            <Footer />
+            <ClientProviders>
+              <Navbar />
+              <main>{children}</main>
+              <WhatsAppFloat />
+              <CallToAction />
+              <Footer />
+            </ClientProviders>
             <VolumeControl />
             <SoundCloudPlayer />
           </ToastProvider>

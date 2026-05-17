@@ -17,7 +17,7 @@ export default function ClientCarousel({ images }: { images: string[] }) {
     <div className="relative w-full aspect-video rounded-2xl overflow-hidden group">
       <div 
         className="w-full h-full bg-cover bg-center transition-all duration-500" 
-        style={{ backgroundImage: `url(${images[currentIndex]})` }} 
+        style={{ backgroundImage: `url('${images[currentIndex]}')` }} 
       />
       
       {images.length > 1 && (

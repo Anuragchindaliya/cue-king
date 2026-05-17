@@ -3,11 +3,21 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { useAuthStore } from '@/store/authStore';
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl') || '/clubs';
+  const tokenFromUrl = searchParams.get('token');
+  const login = useAuthStore((state) => state.login);
+
+  useEffect(() => {
+    if (tokenFromUrl) {
+      login(tokenFromUrl);
+      router.push(returnUrl);
+    }
+  }, [tokenFromUrl, login, router, returnUrl]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -22,9 +32,7 @@ function LoginContent() {
   // }, [router, returnUrl]);
 
   const handleGoogleSignIn = () => {
-    // Mock Google sign in
-    localStorage.setItem('token', 'mock_google_token');
-    router.push(returnUrl);
+    window.location.href = 'http://localhost:5001/api/auth/google';
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -50,9 +58,7 @@ function LoginContent() {
       const data = await res.json();
       
       if (data.success) {
-        localStorage.setItem('token', data.data.token);
-        
-        // Ensure pendingBooking logic can pick this up if needed
+        login(data.data.token, data.data.user);
         router.push(returnUrl);
       } else {
         setError(data.message || 'Login failed');

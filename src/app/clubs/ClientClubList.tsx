@@ -19,7 +19,7 @@ function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors
   return (
     <div className="w-full h-48 overflow-x-auto flex snap-x snap-mandatory hide-scrollbar rounded-t-xl relative group">
       {allImages.map((src, i) => (
-        <div key={i} className="min-w-full h-full snap-center bg-cover bg-center" style={{ backgroundImage: `url(${src})` }} />
+        <div key={i} className="min-w-full h-full snap-center bg-cover bg-center" style={{ backgroundImage: `url('${src}')` }} />
       ))}
       <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded backdrop-blur-sm pointer-events-none">
         Swipe
