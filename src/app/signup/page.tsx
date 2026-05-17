@@ -14,6 +14,10 @@ function SignupContent() {
   const [password, setPassword] = useState('');
   const [step, setStep] = useState<'initial' | 'password'>('initial');
 
+  const [role, setRole] = useState<'PLAYER' | 'CLUB_OWNER'>('PLAYER');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const handleGoogleSignUp = () => {
     localStorage.setItem('token', 'mock_google_token');
     router.push(returnUrl);
@@ -26,15 +30,38 @@ function SignupContent() {
     }
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem('token', 'mock_email_token');
-    router.push(returnUrl);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:5001/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, name, role })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        localStorage.setItem('token', data.data.token);
+        // If club owner, maybe redirect to create club if they don't have one?
+        if (role === 'CLUB_OWNER' && returnUrl === '/clubs') {
+           router.push('/owner/club/new');
+        } else {
+           router.push(returnUrl);
+        }
+      } else {
+        setError(data.message || 'Signup failed');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSkipPassword = () => {
-    localStorage.setItem('token', 'mock_passwordless_token');
-    router.push(returnUrl);
+    setError('Password is required for signup.');
   };
 
   return (
@@ -57,6 +84,20 @@ function SignupContent() {
           {step === 'initial' ? (
             <>
               <form className="space-y-6" onSubmit={handleEmailSubmit}>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">I want to...</label>
+                  <div className="flex gap-4">
+                    <label className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg border cursor-pointer transition-colors ${role === 'PLAYER' ? 'border-snookerGreen bg-snookerGreen/10 text-snookerGreen' : 'border-white/20 text-gray-400 hover:bg-white/5'}`}>
+                      <input type="radio" name="role" value="PLAYER" checked={role === 'PLAYER'} onChange={() => setRole('PLAYER')} className="hidden" />
+                      Play & Book
+                    </label>
+                    <label className={`flex-1 flex items-center justify-center py-2 px-4 rounded-lg border cursor-pointer transition-colors ${role === 'CLUB_OWNER' ? 'border-snookerGreen bg-snookerGreen/10 text-snookerGreen' : 'border-white/20 text-gray-400 hover:bg-white/5'}`}>
+                      <input type="radio" name="role" value="CLUB_OWNER" checked={role === 'CLUB_OWNER'} onChange={() => setRole('CLUB_OWNER')} className="hidden" />
+                      List my Club
+                    </label>
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-300">
                     Full Name
@@ -130,15 +171,21 @@ function SignupContent() {
             </>
           ) : (
             <form className="space-y-6" onSubmit={handlePasswordSubmit}>
+              {error && (
+                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/50 text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                  Create a Password (Optional)
+                  Create a Password
                 </label>
                 <div className="mt-1">
                   <input
                     id="password"
                     name="password"
                     type="password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="appearance-none block w-full px-3 py-2 border border-white/10 rounded-md shadow-sm placeholder-gray-400 bg-black/50 focus:outline-none focus:ring-snookerGreen focus:border-snookerGreen sm:text-sm text-white"
@@ -149,9 +196,10 @@ function SignupContent() {
               <div className="flex flex-col gap-3">
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none"
+                  disabled={loading}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none disabled:opacity-50"
                 >
-                  Create Account
+                  {loading ? 'Creating Account...' : 'Create Account'}
                 </button>
                 <button
                   type="button"

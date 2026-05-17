@@ -35,9 +35,9 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-20">
           <div className="shrink-0">
-            <span className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-snookerGreen to-goldAccent">
+            <Link href="/" onClick={playHitSound} className="text-2xl font-bold bg-clip-text text-transparent bg-linear-to-r from-snookerGreen to-goldAccent">
               Cue King
-            </span>
+            </Link>
           </div>
 
           <div className="hidden md:block">
@@ -47,7 +47,7 @@ export function Navbar() {
               <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Experience</Link>
               <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> Game</Link>
               <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
-              <Link href="/about" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">About</Link>
+
 
               <div className="border-l border-white/20 pl-4 ml-2 flex items-baseline space-x-4">
                 <Link href="/login" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
@@ -91,7 +91,6 @@ export function Navbar() {
           >
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-black/80 backdrop-blur-xl border-b border-white/10">
               <Link href="/" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
-              <Link href="/about" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">About</Link>
               <Link href="/clubs" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Clubs</Link>
               <Link href="/experience" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
               <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>

@@ -13,7 +13,7 @@ async function getInitialClubs() {
       cache: 'no-store' // Ensure we fetch fresh data on server
     });
     const data = await res.json();
-    console.log("🚀 ~ getInitialClubs ~ data:", data)
+    // console.log("🚀 ~ getInitialClubs ~ data:", data)
     return data.success ? data.data : [];
   } catch (error) {
     console.error('Failed to fetch clubs for SSR:', error);

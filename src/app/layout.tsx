@@ -10,6 +10,8 @@ import { SoundProvider } from '@/components/SoundProvider';
 import { WhatsAppFloat } from '@/components/WhatsAppFloat';
 import { CallToAction } from '@/components/CallToAction';
 
+import { Footer } from '@/components/Footer';
+
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
 export const metadata: Metadata = {
@@ -34,6 +36,7 @@ export default function RootLayout({
             <main>{children}</main>
             <WhatsAppFloat />
             <CallToAction />
+            <Footer />
             <VolumeControl />
             <SoundCloudPlayer />
           </ToastProvider>

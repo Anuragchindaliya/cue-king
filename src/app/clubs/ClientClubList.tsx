@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
@@ -11,7 +11,7 @@ function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors
   if (cover) allImages.push(`http://localhost:5001${cover}`);
   if (interiors) interiors.forEach(img => allImages.push(`http://localhost:5001${img}`));
   if (tables) tables.forEach(img => { if (img) allImages.push(`http://localhost:5001${img}`) });
-  
+
   if (allImages.length === 0) {
     return <div className="w-full h-48 bg-white/5 flex items-center justify-center text-gray-500 rounded-t-xl">No Images Available</div>;
   }
@@ -50,7 +50,7 @@ const COMMON_AMENITIES = ['Air Condition', 'Parking', 'Cafe', 'Wifi', 'Ball Boy'
 export default function ClientClubList({ initialClubs }: { initialClubs: any[] }) {
   const router = useRouter();
   const [clubs, setClubs] = useState<any[]>(initialClubs);
-  
+
   // Filters State
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search, 500);
@@ -61,23 +61,23 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
   const [amenities, setAmenities] = useState<string[]>([]);
   const [openNow, setOpenNow] = useState(false);
   const [is24_7, setIs24_7] = useState(false);
-  
+
   // Suggestions State
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
   // UI State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
-  
+
   // Location State
-  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
-  
+  const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
+
   // Pagination State
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  
+
   // Columns state for virtualization
   const [columns, setColumns] = useState(1);
 
@@ -109,14 +109,14 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     }
   }, [debouncedSearch]);
 
-  const fetchClubs = async (pageNum: number, isReset: boolean = false) => {
+  const fetchClubs = useCallback(async (pageNum: number, isReset: boolean = false) => {
     setLoading(true);
     setError('');
     try {
       const params = new URLSearchParams();
       params.append('page', pageNum.toString());
-      params.append('limit', '12'); 
-      
+      params.append('limit', '12');
+
       if (debouncedSearch) params.append('search', debouncedSearch);
       if (sortBy) params.append('sortBy', sortBy);
       if (tableTypes.length > 0) params.append('tableTypes', tableTypes.join(','));
@@ -132,12 +132,16 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
       const res = await fetch(`http://localhost:5001/api/clubs?${params.toString()}`);
       const data = await res.json();
-      
+
       if (data.success) {
         if (isReset) {
           setClubs(data.data);
         } else {
-          setClubs(prev => [...prev, ...data.data]);
+          setClubs(prev => {
+            // Deduplicate items to prevent memory growth on strict-mode double calls
+            const newClubs = data.data.filter((c: any) => !prev.some(p => p.id === c.id));
+            return [...prev, ...newClubs];
+          });
         }
         setHasMore(data.meta.page < data.meta.totalPages);
       }
@@ -147,12 +151,12 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     } finally {
       setLoading(false);
     }
-  };
+  }, [debouncedSearch, sortBy, tableTypes, minPrice, maxPrice, userLocation, amenities, openNow, is24_7]);
 
   useEffect(() => {
     setPage(1);
     fetchClubs(1, true);
-  }, [debouncedSearch, sortBy, tableTypes, minPrice, maxPrice, userLocation, amenities, openNow, is24_7]);
+  }, [fetchClubs]);
 
   const detectLocation = () => {
     if ('geolocation' in navigator) {
@@ -180,7 +184,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
   // --- Virtualization Setup ---
   const listRef = useRef<HTMLDivElement>(null);
-  
+
   const rows: any[][] = [];
   for (let i = 0; i < clubs.length; i += columns) {
     rows.push(clubs.slice(i, i + columns));
@@ -192,20 +196,28 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     overscan: 2,
   });
 
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
-    const handleScroll = () => {
-      if (window.innerHeight + document.documentElement.scrollTop + 300 >= document.documentElement.offsetHeight) {
-        if (!loading && hasMore) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !loading && hasMore) {
           setPage(p => {
             const next = p + 1;
             fetchClubs(next, false);
             return next;
           });
         }
-      }
+      },
+      { threshold: 0.1 }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) observer.observe(currentRef);
+
+    return () => {
+      if (currentRef) observer.unobserve(currentRef);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, [loading, hasMore, fetchClubs]);
 
   const filterSidebarContent = (
@@ -216,39 +228,10 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
           <X className="w-6 h-6" />
         </button>
       </div>
-      
-      {/* Search */}
-      <div className="relative">
-        <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
-        <input 
-          type="text" 
-          placeholder="Search clubs or areas..." 
-          className="w-full bg-black/50 border border-white/10 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-snookerGreen"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          onFocus={() => setShowSuggestions(suggestions.length > 0)}
-          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-        />
-        {/* Autocomplete Suggestions */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="absolute z-50 w-full mt-1 bg-[#111] border border-white/10 rounded-lg shadow-xl overflow-hidden">
-            {suggestions.map((sug) => (
-              <div 
-                key={sug.id} 
-                className="p-3 hover:bg-white/5 cursor-pointer border-b border-white/5 last:border-0"
-                onClick={() => router.push(`/club/${sug.id}`)}
-              >
-                <div className="text-sm text-white font-medium">{sug.name}</div>
-                <div className="text-xs text-gray-400">{sug.location?.area}, {sug.location?.city}</div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
 
       {/* Location Detection */}
       <div>
-        <button 
+        <button
           onClick={detectLocation}
           className={`w-full flex items-center justify-center py-2 px-4 rounded-lg text-sm font-medium transition-colors ${userLocation ? 'bg-snookerGreen/20 text-snookerGreen border border-snookerGreen/30' : 'bg-white/10 hover:bg-white/20 text-white'}`}
         >
@@ -282,7 +265,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
       <div>
         <label className="block text-sm text-gray-400 mb-2">Sort By</label>
         <div className="relative">
-          <select 
+          <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
             className="w-full appearance-none bg-black/50 border border-white/10 rounded-lg pl-4 pr-10 py-2 text-sm text-white focus:outline-none focus:border-snookerGreen"
@@ -303,11 +286,11 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
         <div className="space-y-2">
           {['Snooker Table', '8 Ball Pool Table'].map(type => (
             <label key={type} className="flex items-center space-x-3 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={tableTypes.includes(type)}
                 onChange={() => toggleArrayItem(type, tableTypes, setTableTypes)}
-                className="form-checkbox h-4 w-4 text-snookerGreen rounded border-gray-600 bg-black/50 focus:ring-snookerGreen focus:ring-offset-gray-900" 
+                className="form-checkbox h-4 w-4 text-snookerGreen rounded border-gray-600 bg-black/50 focus:ring-snookerGreen focus:ring-offset-gray-900"
               />
               <span className="text-sm text-gray-300">{type}</span>
             </label>
@@ -321,11 +304,11 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
         <div className="space-y-2 max-h-40 overflow-y-auto hide-scrollbar">
           {COMMON_AMENITIES.map(amenity => (
             <label key={amenity} className="flex items-center space-x-3 cursor-pointer">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={amenities.includes(amenity)}
                 onChange={() => toggleArrayItem(amenity, amenities, setAmenities)}
-                className="form-checkbox h-4 w-4 text-snookerGreen rounded border-gray-600 bg-black/50 focus:ring-snookerGreen focus:ring-offset-gray-900" 
+                className="form-checkbox h-4 w-4 text-snookerGreen rounded border-gray-600 bg-black/50 focus:ring-snookerGreen focus:ring-offset-gray-900"
               />
               <span className="text-sm text-gray-300">{amenity}</span>
             </label>
@@ -337,17 +320,17 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
       <div>
         <label className="block text-sm text-gray-400 mb-2">Price per Hour (₹)</label>
         <div className="flex items-center space-x-2">
-          <input 
-            type="number" 
-            placeholder="Min" 
+          <input
+            type="number"
+            placeholder="Min"
             className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-snookerGreen"
             value={minPrice}
             onChange={e => setMinPrice(e.target.value)}
           />
           <span className="text-gray-500">-</span>
-          <input 
-            type="number" 
-            placeholder="Max" 
+          <input
+            type="number"
+            placeholder="Max"
             className="w-full bg-black/50 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-snookerGreen"
             value={maxPrice}
             onChange={e => setMaxPrice(e.target.value)}
@@ -357,12 +340,45 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     </div>
   );
 
-  return (
+  return (<div className="flex flex-col gap-6 lg:gap-8">
+    {/* Sticky App-like Search Bar */}
+    <div className="sticky top-20 z-40 bg-black/90 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:top-24 lg:pt-0 border-b border-white/5 lg:border-none shadow-sm">
+      <div className="relative max-w-2xl mx-auto lg:mx-0 w-full">
+        <Search className="w-5 h-5 absolute left-4 top-3.5 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Search for clubs, areas, or tables..."
+          className="w-full bg-white/10 border border-white/20 rounded-2xl pl-12 pr-4 py-3 text-base text-white focus:outline-none focus:border-snookerGreen focus:ring-1 focus:ring-snookerGreen transition-all placeholder:text-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          onFocus={() => setShowSuggestions(suggestions.length > 0)}
+          onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+        />
+        {/* Autocomplete Suggestions */}
+        {showSuggestions && suggestions.length > 0 && (
+          <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col">
+            {suggestions.map((sug) => (
+              <div
+                key={sug.id}
+                className="p-4 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 flex items-center justify-between transition-colors"
+                onClick={() => router.push(`/club/${sug.id}`)}
+              >
+                <div>
+                  <div className="text-base text-white font-bold">{sug.name}</div>
+                  <div className="text-sm text-gray-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {sug.location?.area}, {sug.location?.city}</div>
+                </div>
+                <div className="text-snookerGreen bg-snookerGreen/10 px-2 py-1 rounded text-xs font-medium">Book</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+
     <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
-      {/* Mobile Filter Toggle */}
       <div className="lg:hidden flex items-center justify-between bg-white/5 p-4 rounded-xl border border-white/10">
         <div className="text-white font-medium">Found {clubs.length} clubs</div>
-        <button 
+        <button
           onClick={() => setIsMobileFilterOpen(true)}
           className="flex items-center text-sm font-bold bg-snookerGreen text-white px-4 py-2 rounded-lg"
         >
@@ -388,13 +404,13 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
       {/* Main Content Area */}
       <div className="flex-1 min-w-0" ref={listRef}>
         {error && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl mb-6">{error}</div>}
-        
+
         {clubs.length === 0 && !loading && (
           <div className="text-center py-24 bg-white/5 border border-white/10 rounded-xl mx-4 lg:mx-0">
             <div className="text-4xl mb-4">🎱</div>
             <h3 className="text-xl font-medium text-white mb-2">No clubs found</h3>
             <p className="text-gray-400">Try adjusting your filters or searching for something else.</p>
-            <button 
+            <button
               onClick={() => {
                 setSearch(''); setSortBy(''); setTableTypes([]); setMinPrice(''); setMaxPrice(''); setUserLocation(null); setAmenities([]); setOpenNow(false); setIs24_7(false);
               }}
@@ -407,8 +423,8 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
         {/* Virtualized Grid List */}
         {clubs.length > 0 && (
-          <div 
-            style={{ 
+          <div
+            style={{
               height: `${rowVirtualizer.getTotalSize()}px`,
               width: '100%',
               position: 'relative',
@@ -434,7 +450,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
                 >
                   {row.map(club => {
                     const tableImages = club.tableCategories?.map((c: any) => c.image).filter(Boolean);
-                    
+
                     // Format Pricing nicely
                     const snookerTable = club.tableCategories?.find((t: any) => t.name.toLowerCase().includes('snooker'));
                     const poolTable = club.tableCategories?.find((t: any) => t.name.toLowerCase().includes('8 ball') || t.name.toLowerCase().includes('pool'));
@@ -442,7 +458,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
                     return (
                       <div key={club.id} className="bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex flex-col h-full overflow-hidden shadow-lg">
                         <ImageCarousel cover={club.coverImage} interiors={club.interiorImages} tables={tableImages} />
-                        
+
                         <div className="p-4 flex-1 flex flex-col">
                           <div className="flex justify-between items-start mb-2">
                             <h3 className="text-lg font-bold text-white line-clamp-1" title={club.name}>{club.name}</h3>
@@ -452,7 +468,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
                           </div>
 
                           <p className="text-gray-400 text-xs mb-3 line-clamp-2 min-h-[32px]">{club.fullAddress || club.description || 'A great place to play.'}</p>
-                          
+
                           {/* Pricing & Tables Area */}
                           <div className="bg-black/40 rounded-lg p-3 mb-4 space-y-2 border border-white/5">
                             {snookerTable ? (
@@ -503,12 +519,12 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
           </div>
         )}
 
-        {/* Loading Indicator */}
-        {loading && (
-          <div className="flex justify-center py-8">
+        {/* Infinite Scroll Trigger & Loading Indicator */}
+        <div ref={loadMoreRef} className="w-full h-10 mt-4 flex items-center justify-center">
+          {loading && (
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-snookerGreen"></div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <style jsx global>{`
@@ -521,5 +537,6 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
         }
       `}</style>
     </div>
+  </div>
   );
 }

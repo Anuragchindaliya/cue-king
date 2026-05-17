@@ -34,17 +34,39 @@ function LoginContent() {
     }
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login
-    localStorage.setItem('token', 'mock_email_token');
-    router.push(returnUrl);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:5001/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      
+      if (data.success) {
+        localStorage.setItem('token', data.data.token);
+        
+        // Ensure pendingBooking logic can pick this up if needed
+        router.push(returnUrl);
+      } else {
+        setError(data.message || 'Login failed');
+      }
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSkipPassword = () => {
-    // Login without password (magic link/OTP logic goes here, for now we just log them in)
-    localStorage.setItem('token', 'mock_passwordless_token');
-    router.push(returnUrl);
+    // We remove the skip password for now since we need a real token, or you can implement passwordless login.
+    setError('Password is required for login.');
   };
 
   return (
@@ -123,15 +145,21 @@ function LoginContent() {
             </>
           ) : (
             <form className="space-y-6" onSubmit={handlePasswordSubmit}>
+              {error && (
+                <div className="p-3 rounded-md bg-red-500/10 border border-red-500/50 text-red-500 text-sm">
+                  {error}
+                </div>
+              )}
               <div>
                 <label htmlFor="password" className="block text-sm font-medium text-gray-300">
-                  Password (Optional)
+                  Password
                 </label>
                 <div className="mt-1">
                   <input
                     id="password"
                     name="password"
                     type="password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="appearance-none block w-full px-3 py-2 border border-white/10 rounded-md shadow-sm placeholder-gray-400 bg-black/50 focus:outline-none focus:ring-snookerGreen focus:border-snookerGreen sm:text-sm text-white"
@@ -142,9 +170,10 @@ function LoginContent() {
               <div className="flex flex-col gap-3">
                 <button
                   type="submit"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none"
+                  disabled={loading}
+                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none disabled:opacity-50"
                 >
-                  Sign in with Password
+                  {loading ? 'Signing in...' : 'Sign in with Password'}
                 </button>
                 <button
                   type="button"
