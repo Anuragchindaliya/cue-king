@@ -4,7 +4,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { Search, MapPin, SlidersHorizontal, ChevronDown, X, Clock, Wifi, Coffee, Car, Wind, Filter } from 'lucide-react';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import { Search, MapPin, SlidersHorizontal, ChevronDown, X, Clock, Wifi, Coffee, Car, Wind, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 
 function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors?: string[], tables?: string[] }) {
   const allImages = [];
@@ -47,9 +48,10 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const COMMON_AMENITIES = ['Air Condition', 'Parking', 'Cafe', 'Wifi', 'Ball Boy'];
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
 export default function ClientClubList({ initialClubs }: { initialClubs: any[] }) {
   const router = useRouter();
-  const [clubs, setClubs] = useState<any[]>(initialClubs);
 
   // Filters State
   const [search, setSearch] = useState('');
@@ -71,12 +73,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
   // Location State
   const [userLocation, setUserLocation] = useState<{ lat: number, lng: number } | null>(null);
-
-  // Pagination State
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [isDetectingLocation, setIsDetectingLocation] = useState(false);
 
   // Columns state for virtualization
   const [columns, setColumns] = useState(1);
@@ -109,58 +106,84 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     }
   }, [debouncedSearch]);
 
-  const fetchClubs = useCallback(async (pageNum: number, isReset: boolean = false) => {
-    setLoading(true);
-    setError('');
-    try {
-      const params = new URLSearchParams();
-      params.append('page', pageNum.toString());
-      params.append('limit', '12');
+  const fetchClubsQuery = async ({ pageParam = 1, queryKey }: any) => {
+    const [_key, params] = queryKey as [string, any];
+    const urlParams = new URLSearchParams();
+    urlParams.append('page', pageParam.toString());
+    urlParams.append('limit', '12');
 
-      if (debouncedSearch) params.append('search', debouncedSearch);
-      if (sortBy) params.append('sortBy', sortBy);
-      if (tableTypes.length > 0) params.append('tableTypes', tableTypes.join(','));
-      if (amenities.length > 0) params.append('amenities', amenities.join(','));
-      if (minPrice) params.append('minPrice', minPrice);
-      if (maxPrice) params.append('maxPrice', maxPrice);
-      if (openNow) params.append('openNow', 'true');
-      if (is24_7) params.append('is24_7', 'true');
-      if (userLocation) {
-        params.append('lat', userLocation.lat.toString());
-        params.append('lng', userLocation.lng.toString());
-      }
-
-      const res = await fetch(`http://localhost:5001/api/clubs?${params.toString()}`);
-      const data = await res.json();
-
-      if (data.success) {
-        if (isReset) {
-          setClubs(data.data);
-        } else {
-          setClubs(prev => {
-            // Deduplicate items to prevent memory growth on strict-mode double calls
-            const newClubs = data.data.filter((c: any) => !prev.some(p => p.id === c.id));
-            return [...prev, ...newClubs];
-          });
-        }
-        setHasMore(data.meta.page < data.meta.totalPages);
-      }
-    } catch (err) {
-      console.error('Failed to fetch clubs', err);
-      setError('Could not fetch clubs. Please try again.');
-    } finally {
-      setLoading(false);
+    if (params.debouncedSearch) urlParams.append('search', params.debouncedSearch);
+    if (params.sortBy) urlParams.append('sortBy', params.sortBy);
+    if (params.tableTypes.length > 0) urlParams.append('tableTypes', params.tableTypes.join(','));
+    if (params.amenities.length > 0) urlParams.append('amenities', params.amenities.join(','));
+    if (params.minPrice) urlParams.append('minPrice', params.minPrice);
+    if (params.maxPrice) urlParams.append('maxPrice', params.maxPrice);
+    if (params.openNow) urlParams.append('openNow', 'true');
+    if (params.is24_7) urlParams.append('is24_7', 'true');
+    if (params.userLocation) {
+      urlParams.append('lat', params.userLocation.lat.toString());
+      urlParams.append('lng', params.userLocation.lng.toString());
     }
-  }, [debouncedSearch, sortBy, tableTypes, minPrice, maxPrice, userLocation, amenities, openNow, is24_7]);
 
-  useEffect(() => {
-    setPage(1);
-    fetchClubs(1, true);
-  }, [fetchClubs]);
+    const res = await fetch(`${API_BASE_URL}/api/clubs?${urlParams.toString()}`);
+    if (!res.ok) {
+      const error: any = new Error('Failed to fetch clubs');
+      error.status = res.status;
+      throw error;
+    }
+
+    const data = await res.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to fetch clubs');
+    }
+    return data;
+  };
+
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useInfiniteQuery({
+    queryKey: ['clubs', { debouncedSearch, sortBy, tableTypes, minPrice, maxPrice, userLocation, amenities, openNow, is24_7 }],
+    queryFn: fetchClubsQuery,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => {
+      if (lastPage.meta.page < lastPage.meta.totalPages) {
+        return lastPage.meta.page + 1;
+      }
+      return undefined;
+    },
+    initialData: () => {
+      if (!debouncedSearch && !sortBy && tableTypes.length === 0 && !minPrice && !maxPrice && !userLocation && amenities.length === 0 && !openNow && !is24_7) {
+        return {
+          pages: [{
+            success: true,
+            data: initialClubs,
+            meta: { page: 1, totalPages: 2 }
+          }],
+          pageParams: [1]
+        };
+      }
+      return undefined;
+    },
+    retry: (failureCount, error: any) => {
+      console.log("🚀 ~ ClientClubList ~ failureCount:", failureCount)
+      if (failureCount >= 3) return false;
+      if (error?.status >= 400 && error?.status < 500) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 15000),
+  });
+
+  const clubs = data?.pages.flatMap(page => page.data) || [];
 
   const detectLocation = () => {
     if ('geolocation' in navigator) {
-      setLoading(true);
+      setIsDetectingLocation(true);
       navigator.geolocation.getCurrentPosition(
         (position) => {
           setUserLocation({
@@ -168,11 +191,12 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
             lng: position.coords.longitude
           });
           setSortBy('distance');
+          setIsDetectingLocation(false);
         },
         (err) => {
           console.warn('Geolocation permission denied', err);
-          setError('Location access denied.');
-          setLoading(false);
+          alert('Location access denied.');
+          setIsDetectingLocation(false);
         }
       );
     }
@@ -201,12 +225,8 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting && !loading && hasMore) {
-          setPage(p => {
-            const next = p + 1;
-            fetchClubs(next, false);
-            return next;
-          });
+        if (entries[0].isIntersecting && !isFetchingNextPage && hasNextPage) {
+          fetchNextPage();
         }
       },
       { threshold: 0.1 }
@@ -218,7 +238,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     return () => {
       if (currentRef) observer.unobserve(currentRef);
     };
-  }, [loading, hasMore, fetchClubs]);
+  }, [isFetchingNextPage, hasNextPage, fetchNextPage]);
 
   const filterSidebarContent = (
     <div className="space-y-6">
@@ -403,9 +423,22 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0" ref={listRef}>
-        {error && <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl mb-6">{error}</div>}
+        {isError && (
+          <div className="bg-red-500/10 border border-red-500/50 p-6 rounded-xl mb-6 text-center shadow-lg">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-white mb-2">Oops! Something went wrong</h3>
+            <p className="text-red-400 mb-4">We're having trouble fetching the clubs right now; please try again in a moment.</p>
+            <button
+              onClick={() => refetch()}
+              className="inline-flex items-center px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-500 font-medium rounded-lg transition-colors border border-red-500/30"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </button>
+          </div>
+        )}
 
-        {clubs.length === 0 && !loading && (
+        {clubs.length === 0 && !isLoading && !isError && (
           <div className="text-center py-24 bg-white/5 border border-white/10 rounded-xl mx-4 lg:mx-0">
             <div className="text-4xl mb-4">🎱</div>
             <h3 className="text-xl font-medium text-white mb-2">No clubs found</h3>
@@ -521,7 +554,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
 
         {/* Infinite Scroll Trigger & Loading Indicator */}
         <div ref={loadMoreRef} className="w-full h-10 mt-4 flex items-center justify-center">
-          {loading && (
+          {isFetchingNextPage && (
             <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-snookerGreen"></div>
           )}
         </div>
