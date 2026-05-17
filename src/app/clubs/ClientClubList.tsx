@@ -4,14 +4,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Search, MapPin, SlidersHorizontal, ChevronDown, X, Clock, Wifi, Coffee, Car, Wind, Filter, AlertCircle, RefreshCw } from 'lucide-react';
+import { API_BASE_URL } from '@/config/api';
 
 function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors?: string[], tables?: string[] }) {
   const allImages = [];
-  if (cover) allImages.push(`http://localhost:5001${cover}`);
-  if (interiors) interiors.forEach(img => allImages.push(`http://localhost:5001${img}`));
-  if (tables) tables.forEach(img => { if (img) allImages.push(`http://localhost:5001${img}`) });
+  if (cover) allImages.push(`${API_BASE_URL}${cover}`);
+  if (interiors) interiors.forEach(img => allImages.push(`${API_BASE_URL}${img}`));
+  if (tables) tables.forEach(img => { if (img) allImages.push(`${API_BASE_URL}${img}`) });
 
   if (allImages.length === 0) {
     return <div className="w-full h-48 bg-white/5 flex items-center justify-center text-gray-500 rounded-t-xl">No Images Available</div>;
@@ -48,7 +49,7 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const COMMON_AMENITIES = ['Air Condition', 'Parking', 'Cafe', 'Wifi', 'Ball Boy'];
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+
 
 export default function ClientClubList({ initialClubs }: { initialClubs: any[] }) {
   const router = useRouter();
@@ -89,17 +90,21 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
     return () => window.removeEventListener('resize', updateColumns);
   }, []);
 
-  // Fetch suggestions
+  const { data: suggestionsData = [] } = useQuery({
+    queryKey: ['club-suggestions', debouncedSearch],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/clubs/suggestions?q=${encodeURIComponent(debouncedSearch)}`);
+      const data = await res.json();
+      return data.success ? data.data : [];
+    },
+    enabled: debouncedSearch.length >= 2
+  });
+
+  // Sync suggestions state with react-query data
   useEffect(() => {
     if (debouncedSearch.length >= 2) {
-      fetch(`http://localhost:5001/api/clubs/suggestions?q=${encodeURIComponent(debouncedSearch)}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setSuggestions(data.data);
-            setShowSuggestions(true);
-          }
-        });
+      setSuggestions(suggestionsData);
+      setShowSuggestions(suggestionsData.length > 0);
     } else {
       setSuggestions([]);
       setShowSuggestions(false);

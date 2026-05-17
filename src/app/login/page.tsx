@@ -4,6 +4,8 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
+import { useMutation } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 function LoginContent() {
   const router = useRouter();
@@ -32,7 +34,7 @@ function LoginContent() {
   // }, [router, returnUrl]);
 
   const handleGoogleSignIn = () => {
-    window.location.href = 'http://localhost:5001/api/auth/google';
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -43,31 +45,32 @@ function LoginContent() {
   };
 
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('http://localhost:5001/api/auth/login', {
+  const loginMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
       const data = await res.json();
-      
-      if (data.success) {
-        login(data.data.token, data.data.user);
-        router.push(returnUrl);
-      } else {
-        setError(data.message || 'Login failed');
+      if (!data.success) {
+        throw new Error(data.message || 'Login failed');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      return data.data;
+    },
+    onSuccess: (data) => {
+      login(data.token, data.user);
+      router.push(returnUrl);
+    },
+    onError: (err: any) => {
+      setError(err.message || 'An error occurred. Please try again.');
     }
+  });
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    loginMutation.mutate();
   };
 
   const handleSkipPassword = () => {
@@ -176,10 +179,10 @@ function LoginContent() {
               <div className="flex flex-col gap-3">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loginMutation.isPending}
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none disabled:opacity-50"
                 >
-                  {loading ? 'Signing in...' : 'Sign in with Password'}
+                  {loginMutation.isPending ? 'Signing in...' : 'Sign in with Password'}
                 </button>
                 <button
                   type="button"

@@ -1,45 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 export default function OwnerDashboard() {
   const router = useRouter();
-  const [clubs, setClubs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchMyClubs = async () => {
-      const token = localStorage.getItem('token');
+  const { data: clubs = [], isLoading } = useQuery({
+    queryKey: ['my-clubs'],
+    queryFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
       if (!token) {
         router.push('/owner/signup');
-        return;
+        throw new Error('No token found');
       }
 
-      try {
-        const res = await fetch('http://localhost:5001/api/clubs/my-clubs', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (data.success) {
-          setClubs(data.data);
-        } else {
-          if (res.status === 401 || res.status === 403) {
-             router.push('/owner/signup');
-          }
+      const res = await fetch(`${API_BASE_URL}/api/clubs/my-clubs`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          router.push('/owner/signup');
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+        throw new Error('Failed to fetch clubs');
       }
-    };
 
-    fetchMyClubs();
-  }, [router]);
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch clubs');
+      }
+      return data.data;
+    },
+    retry: false
+  });
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+  if (isLoading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -69,10 +67,10 @@ export default function OwnerDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {clubs.map(club => (
+            {clubs.map((club: any) => (
               <div key={club.id} className="bg-white/5 border border-white/10 rounded-xl p-6 relative">
                 {club.coverImage && (
-                  <div className="h-40 w-full mb-4 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url('http://localhost:5001${club.coverImage}')` }} />
+                  <div className="h-40 w-full mb-4 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url('${API_BASE_URL}${club.coverImage}')` }} />
                 )}
                 <h3 className="text-xl font-bold text-white mb-2">{club.name}</h3>
                 <p className="text-gray-400 text-sm mb-4 line-clamp-2">{club.description || 'No description provided'}</p>

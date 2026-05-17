@@ -1,6 +1,7 @@
 import { Metadata, ResolvingMetadata } from 'next';
 import Link from 'next/link';
 import BookingFlow from '@/components/BookingFlow';
+import { API_BASE_URL } from '@/config/api';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -8,7 +9,7 @@ type Props = {
 
 async function getClub(id: string) {
   try {
-    const res = await fetch(`http://localhost:5001/api/clubs/${id}`, {
+    const res = await fetch(`${API_BASE_URL}/api/clubs/${id}`, {
       cache: 'no-store'
     });
     const data = await res.json();
@@ -78,11 +79,11 @@ export default async function ClubPage({ params }: Props) {
 
   // Combine images for Carousel
   const allImages = [];
-  if (club.coverImage) allImages.push(`http://localhost:5001${club.coverImage}`);
-  if (club.interiorImages) club.interiorImages.forEach((img: string) => allImages.push(`http://localhost:5001${img}`));
+  if (club.coverImage) allImages.push(`${API_BASE_URL}${club.coverImage}`);
+  if (club.interiorImages) club.interiorImages.forEach((img: string) => allImages.push(`${API_BASE_URL}${img}`));
   if (club.tableCategories) {
     club.tableCategories.forEach((tc: any) => {
-      if (tc.image) allImages.push(`http://localhost:5001${tc.image}`);
+      if (tc.image) allImages.push(`${API_BASE_URL}${tc.image}`);
     });
   }
 

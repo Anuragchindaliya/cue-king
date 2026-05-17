@@ -4,6 +4,8 @@ import { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuthStore } from '@/store/authStore';
+import { useMutation } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 function SignupContent() {
   const router = useRouter();
@@ -26,10 +28,9 @@ function SignupContent() {
 
   const [role, setRole] = useState<'PLAYER' | 'CLUB_OWNER'>('PLAYER');
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const handleGoogleSignUp = () => {
-    window.location.href = 'http://localhost:5001/api/auth/google';
+    window.location.href = `${API_BASE_URL}/api/auth/google`;
   };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
@@ -39,34 +40,35 @@ function SignupContent() {
     }
   };
 
-  const handlePasswordSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch('http://localhost:5001/api/auth/register', {
+  const signupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password, name, role })
       });
       const data = await res.json();
-
-      if (data.success) {
-        login(data.data.token, data.data.user);
-        // If club owner, maybe redirect to create club if they don't have one?
-        if (role === 'CLUB_OWNER' && returnUrl === '/clubs') {
-          router.push('/owner/club/new');
-        } else {
-          router.push(returnUrl);
-        }
-      } else {
-        setError(data.message || 'Signup failed');
+      if (!data.success) {
+        throw new Error(data.message || 'Signup failed');
       }
-    } catch (err) {
-      setError('An error occurred. Please try again.');
-    } finally {
-      setLoading(false);
+      return data.data;
+    },
+    onSuccess: (data) => {
+      login(data.token, data.user);
+      if (role === 'CLUB_OWNER' && returnUrl === '/clubs') {
+        router.push('/owner/club/new');
+      } else {
+        router.push(returnUrl);
+      }
+    },
+    onError: (err: any) => {
+      setError(err.message || 'An error occurred. Please try again.');
     }
+  });
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    signupMutation.mutate();
   };
 
   const handleSkipPassword = () => {
@@ -205,10 +207,10 @@ function SignupContent() {
               <div className="flex flex-col gap-3">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={signupMutation.isPending}
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-snookerGreen hover:bg-snookerGreen/90 focus:outline-none disabled:opacity-50"
                 >
-                  {loading ? 'Creating Account...' : 'Create Account'}
+                  {signupMutation.isPending ? 'Creating Account...' : 'Create Account'}
                 </button>
                 <button
                   type="button"

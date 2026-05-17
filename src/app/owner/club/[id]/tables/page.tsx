@@ -3,17 +3,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 export default function ManageTablesPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [clubId, setClubId] = useState('');
   
   useEffect(() => {
     params.then(p => setClubId(p.id));
   }, [params]);
-
-  const [tables, setTables] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     name: 'Snooker Table',
@@ -21,37 +21,31 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
     pricePerHour: 200,
   });
   const [image, setImage] = useState<File | null>(null);
-  const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!clubId) return;
-    const fetchTables = async () => {
-      try {
-        const res = await fetch(`http://localhost:5001/api/clubs/${clubId}`);
-        const data = await res.json();
-        if (data.success) {
-          setTables(data.data.tableCategories || []);
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+  // useQuery to fetch tables
+  const { data: tables = [], isLoading } = useQuery({
+    queryKey: ['club-tables', clubId],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}`);
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to fetch tables');
       }
-    };
-    fetchTables();
-  }, [clubId]);
+      return data.data.tableCategories || [];
+    },
+    enabled: !!clubId
+  });
 
-  const handleAddTable = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-    const token = localStorage.getItem('token');
-    
-    try {
+  // useMutation to add a table category
+  const addTableMutation = useMutation({
+    mutationFn: async () => {
+      const token = localStorage.getItem('token');
+      
       let imageUrl = '';
       if (image) {
         const formDataObj = new FormData();
         formDataObj.append('image', image);
-        const res = await fetch('http://localhost:5001/api/uploads', {
+        const res = await fetch(`${API_BASE_URL}/api/uploads`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
           body: formDataObj
@@ -60,7 +54,7 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
         if (data.success) imageUrl = data.data.url;
       }
 
-      const res = await fetch(`http://localhost:5001/api/clubs/${clubId}/table-categories`, {
+      const res = await fetch(`${API_BASE_URL}/api/clubs/${clubId}/table-categories`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -75,22 +69,27 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
       });
 
       const data = await res.json();
-      if (data.success) {
-        setTables([...tables, data.data]);
-        setFormData({ name: 'Snooker Table', quantity: 1, pricePerHour: 200 });
-        setImage(null);
-      } else {
-        alert('Failed to add table: ' + data.message);
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to add table');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error adding table');
-    } finally {
-      setSubmitting(false);
+      return data.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['club-tables', clubId] });
+      setFormData({ name: 'Snooker Table', quantity: 1, pricePerHour: 200 });
+      setImage(null);
+    },
+    onError: (err: any) => {
+      alert('Error adding table: ' + err.message);
     }
+  });
+
+  const handleAddTable = (e: React.FormEvent) => {
+    e.preventDefault();
+    addTableMutation.mutate();
   };
 
-  if (loading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
+  if (isLoading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">
@@ -142,10 +141,10 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
                 </div>
                 <button
                   type="submit"
-                  disabled={submitting}
+                  disabled={addTableMutation.isPending}
                   className="w-full bg-snookerGreen hover:bg-snookerGreen/80 text-white font-bold py-2 rounded-lg transition-colors mt-2"
                 >
-                  {submitting ? 'Adding...' : 'Add Table'}
+                  {addTableMutation.isPending ? 'Adding...' : 'Add Table'}
                 </button>
               </form>
             </div>
@@ -158,11 +157,11 @@ export default function ManageTablesPage({ params }: { params: Promise<{ id: str
                 No tables added yet.
               </div>
             ) : (
-              tables.map(table => (
+              tables.map((table: any) => (
                 <div key={table.id} className="bg-white/5 border border-white/10 p-4 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     {table.image ? (
-                      <div className="w-16 h-16 rounded bg-cover bg-center" style={{ backgroundImage: `url('http://localhost:5001${table.image}')` }} />
+                      <div className="w-16 h-16 rounded bg-cover bg-center" style={{ backgroundImage: `url('${API_BASE_URL}${table.image}')` }} />
                     ) : (
                       <div className="w-16 h-16 rounded bg-white/10 flex items-center justify-center text-xs text-gray-500">No Img</div>
                     )}

@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useMutation } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 export default function OwnerSignupPage() {
   const router = useRouter();
@@ -12,32 +14,33 @@ export default function OwnerSignupPage() {
     password: '',
   });
   const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('http://localhost:5001/api/auth/register', {
+  const ownerSignupMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...formData, role: 'CLUB_OWNER' }),
       });
-
       const data = await res.json();
-      if (data.success) {
-        localStorage.setItem('token', data.data.token);
-        router.push('/owner/dashboard');
-      } else {
-        setError(data.message || 'Registration failed');
+      if (!data.success) {
+        throw new Error(data.message || 'Registration failed');
       }
-    } catch (err) {
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setLoading(false);
+      return data.data;
+    },
+    onSuccess: (data) => {
+      localStorage.setItem('token', data.token);
+      router.push('/owner/dashboard');
+    },
+    onError: (err: any) => {
+      setError(err.message || 'Something went wrong. Please try again.');
     }
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    ownerSignupMutation.mutate();
   };
 
   return (
@@ -91,10 +94,10 @@ export default function OwnerSignupPage() {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={ownerSignupMutation.isPending}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-black bg-goldAccent hover:bg-goldAccent/90 focus:outline-none"
             >
-              {loading ? 'Registering...' : 'Create Owner Account'}
+              {ownerSignupMutation.isPending ? 'Registering...' : 'Create Owner Account'}
             </button>
           </div>
         </form>

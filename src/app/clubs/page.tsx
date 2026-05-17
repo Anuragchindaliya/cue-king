@@ -1,5 +1,6 @@
 import ClientClubList from './ClientClubList';
 import { Metadata } from 'next';
+import { API_BASE_URL } from '@/config/api';
 
 export const metadata: Metadata = {
   title: 'Top Snooker & Pool Clubs | Cue King',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 async function getInitialClubs() {
   try {
     // SSR Fetch from backend API
-    const res = await fetch('http://localhost:5001/api/clubs?limit=12', {
+    const res = await fetch(`${API_BASE_URL}/api/clubs?limit=12`, {
       cache: 'no-store' // Ensure we fetch fresh data on server
     });
     const data = await res.json();

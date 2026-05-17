@@ -2,6 +2,8 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useMutation } from '@tanstack/react-query';
+import { API_BASE_URL } from '@/config/api';
 
 export default function BookingFlow({ club }: { club: any }) {
   const router = useRouter();
@@ -75,16 +77,13 @@ export default function BookingFlow({ club }: { club: any }) {
     }
   }, [club.id]);
 
-  const handleConfirm = async () => {
-    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-    
-    if (!token) {
-      localStorage.setItem('pendingBooking', JSON.stringify({ ...formData, clubId: club.id }));
-      router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
-      return;
-    }
+  const confirmBookingMutation = useMutation({
+    mutationFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('UNAUTHORIZED');
+      }
 
-    try {
       const startDateTime = new Date(`${formData.date}T${formData.startTime}:00`).toISOString();
       let endDateObj = new Date(`${formData.date}T${formData.endTime}:00`);
       
@@ -93,7 +92,7 @@ export default function BookingFlow({ club }: { club: any }) {
         endDateObj.setDate(endDateObj.getDate() + 1);
       }
 
-      const res = await fetch('http://localhost:5001/api/bookings', {
+      const res = await fetch(`${API_BASE_URL}/api/bookings`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -108,25 +107,34 @@ export default function BookingFlow({ club }: { club: any }) {
       });
 
       const data = await res.json();
-      
+
       if (res.status === 401 || res.status === 403 || data.message?.toLowerCase().includes('token') || data.message?.toLowerCase().includes('authorized')) {
-        // Token is invalid/expired. Save state and redirect to login
+        throw new Error('UNAUTHORIZED');
+      }
+
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to book');
+      }
+
+      return data;
+    },
+    onSuccess: () => {
+      localStorage.removeItem('pendingBooking'); // Clear it on success
+      setStep(3);
+    },
+    onError: (err: any) => {
+      if (err.message === 'UNAUTHORIZED') {
         localStorage.removeItem('token'); 
         localStorage.setItem('pendingBooking', JSON.stringify({ ...formData, clubId: club.id }));
         router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
-        return;
-      }
-
-      if (data.success) {
-        localStorage.removeItem('pendingBooking'); // Clear it on success
-        setStep(3);
       } else {
-        alert('Failed to book: ' + data.message);
+        alert(err.message || 'Error creating booking');
       }
-    } catch (err) {
-      console.error(err);
-      alert('Error creating booking');
     }
+  });
+
+  const handleConfirm = () => {
+    confirmBookingMutation.mutate();
   };
 
   if (step === 3) {
@@ -275,9 +283,10 @@ export default function BookingFlow({ club }: { club: any }) {
             </button>
             <button
               onClick={handleConfirm}
-              className="w-2/3 bg-goldAccent hover:bg-goldAccent/80 text-black font-bold py-4 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(255,215,0,0.2)]"
+              disabled={confirmBookingMutation.isPending}
+              className="w-2/3 bg-goldAccent hover:bg-goldAccent/80 text-black font-bold py-4 px-4 rounded-lg transition-colors shadow-[0_0_15px_rgba(255,215,0,0.2)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Confirm Booking
+              {confirmBookingMutation.isPending ? 'Confirming...' : 'Confirm Booking'}
             </button>
           </div>
         </div>

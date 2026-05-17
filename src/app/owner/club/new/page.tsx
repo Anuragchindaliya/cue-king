@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useMutation } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
+import { API_BASE_URL } from '@/config/api';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
@@ -114,7 +115,7 @@ export default function CreateClubPage() {
   const createClubMutation = useMutation({
     mutationFn: async (formDataObj: FormData) => {
       const token = localStorage.getItem('token');
-      const res = await fetch('http://localhost:5001/api/clubs', {
+      const res = await fetch(`${API_BASE_URL}/api/clubs`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
