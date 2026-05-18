@@ -8,11 +8,16 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Search, MapPin, SlidersHorizontal, ChevronDown, X, Clock, Wifi, Coffee, Car, Wind, Filter, AlertCircle, RefreshCw } from 'lucide-react';
 import { API_BASE_URL } from '@/config/api';
 
+// Normalise an image URL: Cloudinary absolute URLs are used as-is;
+// legacy relative paths (e.g. /uploads/foo.jpg) get the API base prepended.
+const resolveImageUrl = (src: string): string =>
+  src.startsWith('http') ? src : `${API_BASE_URL}${src}`;
+
 function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors?: string[], tables?: string[] }) {
-  const allImages = [];
-  if (cover) allImages.push(`${API_BASE_URL}${cover}`);
-  if (interiors) interiors.forEach(img => allImages.push(`${API_BASE_URL}${img}`));
-  if (tables) tables.forEach(img => { if (img) allImages.push(`${API_BASE_URL}${img}`) });
+  const allImages: string[] = [];
+  if (cover) allImages.push(resolveImageUrl(cover));
+  if (interiors) interiors.forEach(img => allImages.push(resolveImageUrl(img)));
+  if (tables) tables.forEach(img => { if (img) allImages.push(resolveImageUrl(img)); });
 
   if (allImages.length === 0) {
     return <div className="w-full h-48 bg-white/5 flex items-center justify-center text-gray-500 rounded-t-xl">No Images Available</div>;

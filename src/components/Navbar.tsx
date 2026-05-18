@@ -104,8 +104,8 @@ export function Navbar() {
                   </div>
                 ) : (
                   <>
-                    <Link href="/login" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
-                    <Link href="/signup" onClick={playHitSound} className="text-snookerGreen hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
+                    <Link href="/login" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
+                    <Link href="/signup" className="text-green-300 hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
                   </>
                 )}
               </div>
