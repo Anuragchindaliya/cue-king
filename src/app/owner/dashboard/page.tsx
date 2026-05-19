@@ -39,6 +39,7 @@ export default function OwnerDashboard() {
 
   if (isLoading) return <div className="min-h-screen bg-black text-white flex items-center justify-center">Loading...</div>;
 
+  console.log("🚀 ~ OwnerDashboard ~ clubs:", clubs)
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
@@ -54,7 +55,7 @@ export default function OwnerDashboard() {
           </Link>
         </div>
 
-        {clubs.length === 0 ? (
+        {clubs?.data.length === 0 ? (
           <div className="bg-white/5 border border-white/10 rounded-2xl p-12 text-center backdrop-blur-sm">
             <h3 className="text-xl font-medium text-white mb-2">No Clubs Registered Yet</h3>
             <p className="text-gray-400 mb-6">Register your first club to start accepting bookings on Cue King.</p>
@@ -67,7 +68,7 @@ export default function OwnerDashboard() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {clubs.map((club: any) => (
+            {clubs?.data?.map((club: any) => (
               <div key={club.id} className="bg-white/5 border border-white/10 rounded-xl p-6 relative">
                 {club.coverImage && (
                   <div className="h-40 w-full mb-4 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url('${API_BASE_URL}${club.coverImage}')` }} />

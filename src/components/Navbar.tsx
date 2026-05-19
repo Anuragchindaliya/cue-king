@@ -58,7 +58,7 @@ export function Navbar() {
               <Link href="/" onClick={playHitSound} className="text-white hover:text-goldAccent transition-colors px-2 py-2 rounded-md text-sm font-medium">Home</Link>
               <Link href="/clubs" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Clubs</Link>
               <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Experience</Link>
-              <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> Game</Link>
+              {/* <Link href="/play" onClick={playHitSound} className="text-goldAccent hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-black tracking-wide flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> Game</Link> */}
               <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
 
 
@@ -85,10 +85,18 @@ export function Navbar() {
                             <p className="text-xs text-gray-400 px-2 truncate">{user?.email}</p>
                           </div>
                           <div className="p-1">
+                            <Link href="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                              Profile
+                            </Link>
                             {user?.role === 'CLUB_OWNER' && (
-                              <Link href="/owner/club/new" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
-                                Add Club
-                              </Link>
+                              <>
+                                <Link href="/owner/dashboard" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                  Dashboard
+                                </Link>
+                                <Link href="/owner/club/new" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                  Add Club
+                                </Link>
+                              </>
                             )}
                             <button
                               onClick={handleLogout}
@@ -149,14 +157,18 @@ export function Navbar() {
               <Link href="/" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white block px-3 py-2 rounded-md text-base font-medium">Home</Link>
               <Link href="/clubs" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Clubs</Link>
               <Link href="/experience" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
-              <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link>
+              {/* <Link href="/play" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-goldAccent hover:text-white flex items-center gap-2 px-3 py-2 rounded-md text-base font-black tracking-wide"><span className="w-2 h-2 rounded-full bg-snookerGreen animate-pulse shadow-[0_0_5px_#00ff9c]"></span> 8-Ball Game</Link> */}
               <Link href="/shop" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
               <div className="border-t border-white/10 mt-4 pt-4 pb-2">
                 {isAuthenticated ? (
                   <>
                     <div className="px-3 py-2 text-sm text-gray-400 mb-2 truncate border-b border-white/5">{user?.email}</div>
+                    <Link href="/profile" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Profile</Link>
                     {user?.role === 'CLUB_OWNER' && (
-                      <Link href="/owner/club/new" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Add Club</Link>
+                      <>
+                        <Link href="/owner/dashboard" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Dashboard</Link>
+                        <Link href="/owner/club/new" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Add Club</Link>
+                      </>
                     )}
                     <button onClick={handleLogout} className="text-red-400 hover:text-red-300 block w-full text-left px-3 py-2 rounded-md text-base font-medium">Logout</button>
                   </>
