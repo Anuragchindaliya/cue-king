@@ -54,8 +54,18 @@ function useDebounce<T>(value: T, delay: number): T {
 
 const COMMON_AMENITIES = ['Air Condition', 'Parking', 'Cafe', 'Wifi', 'Ball Boy'];
 
-
-
+const HighlightText = ({ text, highlight }: { text: string, highlight: string }) => {
+  if (!highlight.trim()) return <span>{text}</span>;
+  const regex = new RegExp(`(${highlight})`, 'gi');
+  const parts = text.split(regex);
+  return (
+    <span>
+      {parts.map((part, i) =>
+        regex.test(part) ? <span key={i} className="font-bold text-snookerGreen">{part}</span> : <span key={i}>{part}</span>
+      )}
+    </span>
+  );
+};
 export default function ClientClubList({ initialClubs }: { initialClubs: any[] }) {
   const router = useRouter();
 
@@ -73,6 +83,21 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
   // Suggestions State
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('recentSearches');
+    if (saved) {
+      try { setRecentSearches(JSON.parse(saved)); } catch (e) { }
+    }
+  }, []);
+
+  const addRecentSearch = (term: string) => {
+    if (!term.trim()) return;
+    const updated = [term, ...recentSearches.filter(s => s !== term)].slice(0, 5);
+    setRecentSearches(updated);
+    localStorage.setItem('recentSearches', JSON.stringify(updated));
+  };
 
   // UI State
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
@@ -109,10 +134,8 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
   useEffect(() => {
     if (debouncedSearch.length >= 2) {
       setSuggestions(suggestionsData);
-      setShowSuggestions(suggestionsData.length > 0);
     } else {
       setSuggestions([]);
-      setShowSuggestions(false);
     }
   }, [debouncedSearch]);
 
@@ -381,25 +404,58 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
           className="w-full bg-white/10 border border-white/20 rounded-2xl pl-12 pr-4 py-3 text-base text-white focus:outline-none focus:border-snookerGreen focus:ring-1 focus:ring-snookerGreen transition-all placeholder:text-gray-400 shadow-[0_4px_20px_rgba(0,0,0,0.5)]"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          onFocus={() => setShowSuggestions(suggestions.length > 0)}
+          onFocus={() => setShowSuggestions(true)}
           onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              addRecentSearch(search);
+              setShowSuggestions(false);
+            }
+          }}
         />
-        {/* Autocomplete Suggestions */}
-        {showSuggestions && suggestions.length > 0 && (
+        {/* Autocomplete Suggestions & Recent Searches */}
+        {showSuggestions && (
           <div className="absolute z-50 w-full mt-2 bg-[#1a1a1a] border border-white/10 rounded-xl shadow-2xl overflow-hidden flex flex-col">
-            {suggestions.map((sug) => (
-              <div
-                key={sug.id}
-                className="p-4 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 flex items-center justify-between transition-colors"
-                onClick={() => router.push(`/club/${sug.id}`)}
-              >
-                <div>
-                  <div className="text-base text-white font-bold">{sug.name}</div>
-                  <div className="text-sm text-gray-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> {sug.location?.area}, {sug.location?.city}</div>
-                </div>
-                <div className="text-snookerGreen bg-snookerGreen/10 px-2 py-1 rounded text-xs font-medium">Book</div>
+            {search.length < 2 && recentSearches.length > 0 && (
+              <div className="p-2">
+                <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Searches</div>
+                {recentSearches.map((term, idx) => (
+                  <div
+                    key={idx}
+                    className="p-3 hover:bg-white/10 cursor-pointer rounded-lg flex items-center gap-3 transition-colors text-sm text-gray-300"
+                    onClick={() => {
+                      setSearch(term);
+                      setShowSuggestions(false);
+                      addRecentSearch(term);
+                    }}
+                  >
+                    <Clock className="w-4 h-4 text-gray-500" />
+                    {term}
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
+            {search.length >= 2 && suggestions.length > 0 && (
+              <div className="py-2">
+                {suggestions.map((sug) => (
+                  <div
+                    key={sug.id}
+                    className="p-4 hover:bg-white/10 cursor-pointer border-b border-white/5 last:border-0 flex items-center justify-between transition-colors"
+                    onClick={() => {
+                      setSearch(sug.name);
+                      setShowSuggestions(false);
+                      addRecentSearch(sug.name);
+                    }}
+                  >
+                    <div>
+                      <div className="text-base text-white"><HighlightText text={sug.name} highlight={search} /></div>
+                      <div className="text-sm text-gray-400 flex items-center gap-1 mt-0.5"><MapPin className="w-3 h-3" /> <HighlightText text={`${sug.location?.area}, ${sug.location?.city}`} highlight={search} /></div>
+                    </div>
+                    <div className="text-snookerGreen bg-snookerGreen/10 px-2 py-1 rounded text-xs font-medium">Select</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
