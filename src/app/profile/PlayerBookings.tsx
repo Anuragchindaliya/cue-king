@@ -5,12 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/config/api';
 import { useAuthStore } from '@/store/authStore';
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-
+import { useSocket } from '@/providers/SocketProvider';
+import { useToast } from '@/components/ToastProvider';
 
 interface Booking {
   id: string;
   club: { name: string };
-  tableCategory: { name: string };
+  table: { name: string };
   startTime: string;
   endTime: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REJECTED';
@@ -20,6 +21,8 @@ export default function PlayerBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuthStore();
+  const { socket } = useSocket();
+  const { showToast } = useToast();
 
   const fetchBookings = async () => {
     try {
@@ -34,7 +37,7 @@ export default function PlayerBookings() {
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
-      alert('Failed to fetch bookings');
+      showToast('Failed to fetch bookings');
     } finally {
       setLoading(false);
     }
@@ -43,6 +46,20 @@ export default function PlayerBookings() {
   useEffect(() => {
     if (token) fetchBookings();
   }, [token]);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleBookingUpdated = (updatedBooking: any) => {
+      fetchBookings();
+    };
+
+    socket.on('booking-updated', handleBookingUpdated);
+
+    return () => {
+      socket.off('booking-updated', handleBookingUpdated);
+    };
+  }, [socket]);
 
   const handleWithdraw = async (id: string) => {
     try {
@@ -56,14 +73,14 @@ export default function PlayerBookings() {
       });
       const data = await res.json();
       if (data.success) {
-        alert('Booking withdrawn successfully');
+        showToast('Booking withdrawn successfully');
         fetchBookings();
       } else {
-        alert(data.message || 'Failed to withdraw booking');
+        showToast(data.message || 'Failed to withdraw booking');
       }
     } catch (error) {
       console.error('Error withdrawing booking:', error);
-      alert('An error occurred');
+      showToast('An error occurred');
     }
   };
 
@@ -112,7 +129,7 @@ export default function PlayerBookings() {
                     <h3 className="text-xl font-bold text-white">{booking.club.name}</h3>
                     <StatusBadge status={booking.status} />
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row sm:items-center gap-4 text-zinc-400">
                     <div className="flex items-center gap-2">
                       <div className="p-2 bg-zinc-900 rounded-lg">
@@ -132,9 +149,9 @@ export default function PlayerBookings() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="inline-block px-3 py-1 bg-zinc-800/50 rounded-lg text-sm text-zinc-300 border border-zinc-700/50 mt-2">
-                    {booking.tableCategory.name}
+                    {booking.table?.name}
                   </div>
                 </div>
 
@@ -176,7 +193,7 @@ function StatusBadge({ status }: { status: string }) {
     switch (status) {
       case 'CONFIRMED': return <CheckCircle className="w-3.5 h-3.5" />;
       case 'PENDING': return <Clock className="w-3.5 h-3.5" />;
-      case 'CANCELLED': 
+      case 'CANCELLED':
       case 'REJECTED': return <XCircle className="w-3.5 h-3.5" />;
       default: return <AlertCircle className="w-3.5 h-3.5" />;
     }

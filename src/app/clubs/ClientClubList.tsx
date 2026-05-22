@@ -10,14 +10,29 @@ import { API_BASE_URL } from '@/config/api';
 
 // Normalise an image URL: Cloudinary absolute URLs are used as-is;
 // legacy relative paths (e.g. /uploads/foo.jpg) get the API base prepended.
-const resolveImageUrl = (src: string): string =>
-  src.startsWith('http') ? src : `${API_BASE_URL}${src}`;
+const resolveImageUrl = (src: string | null | undefined): string => {
+  if (!src) return '';
+  return src.startsWith('http') ? src : `${API_BASE_URL}${src}`;
+};
 
 function ImageCarousel({ cover, interiors, tables }: { cover?: string, interiors?: string[], tables?: string[] }) {
   const allImages: string[] = [];
-  if (cover) allImages.push(resolveImageUrl(cover));
-  if (interiors) interiors.forEach(img => allImages.push(resolveImageUrl(img)));
-  if (tables) tables.forEach(img => { if (img) allImages.push(resolveImageUrl(img)); });
+  if (cover) {
+    const resolved = resolveImageUrl(cover);
+    if (resolved) allImages.push(resolved);
+  }
+  if (Array.isArray(interiors)) {
+    interiors.forEach(img => {
+      const resolved = resolveImageUrl(img);
+      if (resolved) allImages.push(resolved);
+    });
+  }
+  if (Array.isArray(tables)) {
+    tables.forEach(img => {
+      const resolved = resolveImageUrl(img);
+      if (resolved) allImages.push(resolved);
+    });
+  }
 
   if (allImages.length === 0) {
     return <div className="w-full h-48 bg-white/5 flex items-center justify-center text-gray-500 rounded-t-xl">No Images Available</div>;
@@ -548,11 +563,11 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
                   }}
                 >
                   {row.map(club => {
-                    const tableImages = club.tableCategories?.map((c: any) => c.image).filter(Boolean);
+                    const tableImages: string[] = [];
 
                     // Format Pricing nicely
-                    const snookerTable = club.tableCategories?.find((t: any) => t.name.toLowerCase().includes('snooker'));
-                    const poolTable = club.tableCategories?.find((t: any) => t.name.toLowerCase().includes('8 ball') || t.name.toLowerCase().includes('pool'));
+                    const snookerTable = club.tables?.find((t: any) => t.type === 'SNOOKER');
+                    const poolTable = club.tables?.find((t: any) => t.type === 'EIGHT_BALL_POOL');
 
                     return (
                       <div key={club.id} className="bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 transition-colors flex flex-col h-full overflow-hidden shadow-lg">
@@ -586,6 +601,7 @@ export default function ClientClubList({ initialClubs }: { initialClubs: any[] }
                               <div className="text-xs text-gray-500">Pricing unavailable</div>
                             )}
                           </div>
+
 
                           <div className="text-xs text-gray-500 mb-4 space-y-1.5 flex flex-wrap gap-x-4 gap-y-2">
                             <p className="flex items-center"><Clock className="w-3.5 h-3.5 mr-1" /> {club.openingTime} - {club.closingTime}</p>

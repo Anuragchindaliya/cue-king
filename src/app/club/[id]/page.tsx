@@ -39,6 +39,11 @@ export async function generateMetadata(
 import ClientCarousel from './ClientCarousel';
 import { MapPin, Clock, Info } from 'lucide-react';
 
+const resolveImageUrl = (src: string | null | undefined): string => {
+  if (!src) return '';
+  return src.startsWith('http') ? src : `${API_BASE_URL}${src}`;
+};
+
 export default async function ClubPage({ params }: Props) {
   const p = await params;
   const club = await getClub(p.id);
@@ -79,13 +84,17 @@ export default async function ClubPage({ params }: Props) {
 
   // Combine images for Carousel
   const allImages = [];
-  if (club.coverImage) allImages.push(`${API_BASE_URL}${club.coverImage}`);
-  if (club.interiorImages) club.interiorImages.forEach((img: string) => allImages.push(`${API_BASE_URL}${img}`));
-  if (club.tableCategories) {
-    club.tableCategories.forEach((tc: any) => {
-      if (tc.image) allImages.push(`${API_BASE_URL}${tc.image}`);
+  if (club.coverImage) {
+    const resolved = resolveImageUrl(club.coverImage);
+    if (resolved) allImages.push(resolved);
+  }
+  if (Array.isArray(club.interiorImages)) {
+    club.interiorImages.forEach((img: string) => {
+      const resolved = resolveImageUrl(img);
+      if (resolved) allImages.push(resolved);
     });
   }
+
 
   return (
     <div className="min-h-screen bg-black text-white pt-24 pb-12 px-4 sm:px-6 lg:px-8">

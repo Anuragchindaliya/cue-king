@@ -5,13 +5,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/config/api';
 import { useAuthStore } from '@/store/authStore';
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, User as UserIcon } from 'lucide-react';
+import { useSocket } from '@/providers/SocketProvider';
+import { useToast } from '@/components/ToastProvider';
 
 
 interface Booking {
   id: string;
   club: { name: string };
   user: { name: string; email: string };
-  tableCategory: { name: string };
+  table: { name: string };
   startTime: string;
   endTime: string;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED' | 'REJECTED';
@@ -21,6 +23,9 @@ export default function OwnerBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuthStore();
+  const { socket } = useSocket();
+  const { showToast } = useToast();
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const fetchBookings = async () => {
     try {
@@ -35,7 +40,7 @@ export default function OwnerBookings() {
       }
     } catch (error) {
       console.error('Error fetching owner bookings:', error);
-      alert('Failed to fetch booking requests');
+      showToast('Failed to fetch booking requests');
     } finally {
       setLoading(false);
     }
@@ -45,7 +50,36 @@ export default function OwnerBookings() {
     if (token) fetchBookings();
   }, [token]);
 
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewBooking = (booking: any) => {
+      showToast(`New booking request from ${booking.user?.name || booking.user?.email || 'Player'}`);
+      fetchBookings();
+    };
+
+    const handleBookingCancelled = (booking: any) => {
+      showToast(`Booking request withdrawn by ${booking.user?.name || booking.user?.email || 'Player'}`);
+      fetchBookings();
+    };
+
+    const handleBookingUpdated = (booking: any) => {
+      fetchBookings();
+    };
+
+    socket.on('new-booking', handleNewBooking);
+    socket.on('booking-cancelled', handleBookingCancelled);
+    socket.on('booking-updated', handleBookingUpdated);
+
+    return () => {
+      socket.off('new-booking', handleNewBooking);
+      socket.off('booking-cancelled', handleBookingCancelled);
+      socket.off('booking-updated', handleBookingUpdated);
+    };
+  }, [socket]);
+
   const updateStatus = async (id: string, status: 'CONFIRMED' | 'REJECTED') => {
+    setActionLoading(id);
     try {
       const res = await fetch(`${API_BASE_URL}/api/bookings/${id}/status`, {
         method: 'PATCH',
@@ -57,14 +91,16 @@ export default function OwnerBookings() {
       });
       const data = await res.json();
       if (data.success) {
-        alert(`Booking ${status.toLowerCase()} successfully`);
+        showToast(`Booking ${status === 'CONFIRMED' ? 'accepted' : 'rejected'} successfully`);
         fetchBookings();
       } else {
-        alert(data.message || `Failed to ${status.toLowerCase()} booking`);
+        showToast(data.message || `Failed to update booking status`);
       }
     } catch (error) {
       console.error(`Error updating booking status:`, error);
-      alert('An error occurred');
+      showToast('An error occurred');
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -99,8 +135,9 @@ export default function OwnerBookings() {
       ) : (
         <div className="space-y-4">
           <AnimatePresence>
-            {bookings.map((booking) => (
-              <motion.div
+            {bookings.map((booking) => {
+              console.log("🚀 ~ OwnerBookings ~ booking:", booking)
+              return <motion.div
                 key={booking.id}
                 layout
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -121,12 +158,12 @@ export default function OwnerBookings() {
                     </div>
                     <StatusBadge status={booking.status} />
                   </div>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
                       <p className="text-xs text-zinc-500 uppercase tracking-wider mb-1">Club & Table</p>
                       <p className="font-medium text-zinc-300">{booking.club.name}</p>
-                      <p className="text-sm text-green-400 mt-0.5">{booking.tableCategory.name}</p>
+                      <p className="text-sm text-green-400 mt-0.5">{booking.table?.name}</p>
                     </div>
 
                     <div className="bg-zinc-900/50 p-3 rounded-xl border border-zinc-800/50">
@@ -143,22 +180,32 @@ export default function OwnerBookings() {
                   <div className="flex flex-col sm:flex-row gap-3 xl:flex-col xl:min-w-[140px]">
                     <button
                       onClick={() => updateStatus(booking.id, 'CONFIRMED')}
-                      className="flex-1 px-4 py-3 bg-green-500 text-black font-semibold rounded-xl hover:bg-green-400 transition-colors flex items-center justify-center gap-2"
+                      disabled={actionLoading !== null}
+                      className="flex-1 px-4 py-3 bg-green-500 text-black font-semibold rounded-xl hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                     >
-                      <CheckCircle className="w-4 h-4" />
+                      {actionLoading === booking.id ? (
+                        <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <CheckCircle className="w-4 h-4" />
+                      )}
                       Accept
                     </button>
                     <button
                       onClick={() => updateStatus(booking.id, 'REJECTED')}
-                      className="flex-1 px-4 py-3 bg-red-500/10 text-red-500 font-medium rounded-xl hover:bg-red-500/20 border border-red-500/20 transition-colors flex items-center justify-center gap-2"
+                      disabled={actionLoading !== null}
+                      className="flex-1 px-4 py-3 bg-red-500/10 text-red-500 font-medium rounded-xl hover:bg-red-500/20 disabled:opacity-50 disabled:cursor-not-allowed border border-red-500/20 transition-colors flex items-center justify-center gap-2"
                     >
-                      <XCircle className="w-4 h-4" />
+                      {actionLoading === booking.id ? (
+                        <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin"></div>
+                      ) : (
+                        <XCircle className="w-4 h-4" />
+                      )}
                       Reject
                     </button>
                   </div>
                 )}
-              </motion.div>
-            ))}
+              </motion.div>;
+            })}
           </AnimatePresence>
         </div>
       )}
@@ -188,7 +235,7 @@ function StatusBadge({ status }: { status: string }) {
     switch (status) {
       case 'CONFIRMED': return <CheckCircle className="w-3.5 h-3.5" />;
       case 'PENDING': return <Clock className="w-3.5 h-3.5" />;
-      case 'CANCELLED': 
+      case 'CANCELLED':
       case 'REJECTED': return <XCircle className="w-3.5 h-3.5" />;
       default: return <AlertCircle className="w-3.5 h-3.5" />;
     }
