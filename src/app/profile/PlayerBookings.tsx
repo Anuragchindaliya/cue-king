@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/config/api';
 import { useAuthStore } from '@/store/authStore';
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { useSocket } from '@/providers/SocketProvider';
+import { useSSE } from '@/hooks/useSSE';
 import { useToast } from '@/components/ToastProvider';
 
 interface Booking {
@@ -21,7 +21,6 @@ export default function PlayerBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuthStore();
-  const { socket } = useSocket();
   const { showToast } = useToast();
 
   const fetchBookings = async () => {
@@ -47,19 +46,16 @@ export default function PlayerBookings() {
     if (token) fetchBookings();
   }, [token]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleBookingUpdated = (updatedBooking: any) => {
-      fetchBookings();
-    };
-
-    socket.on('booking-updated', handleBookingUpdated);
-
-    return () => {
-      socket.off('booking-updated', handleBookingUpdated);
-    };
-  }, [socket]);
+  // Listen to real-time status updates via SSE
+  useSSE({
+    url: token ? `${API_BASE_URL}/api/notifications/events` : '',
+    token: token,
+    events: {
+      'booking-updated': (updatedBooking: any) => {
+        fetchBookings();
+      }
+    }
+  });
 
   const handleWithdraw = async (id: string) => {
     try {

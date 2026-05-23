@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, User, LogOut, ChevronDown, Bell, Heart, Settings, Calendar, UserCheck } from 'lucide-react';
+import { Menu, X, User, LogOut, ChevronDown, Bell, Heart, Settings, Calendar, UserCheck, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
@@ -22,8 +22,6 @@ export function Navbar() {
   const router = useRouter();
 
   const { isAuthenticated, user, logout } = useAuthStore();
-  const { socket } = useSocket();
-  const queryClient = useQueryClient();
 
   const handleLogout = () => {
     playHitSound();
@@ -55,21 +53,11 @@ export function Navbar() {
       return data.data;
     },
     enabled: isAuthenticated,
+    staleTime: 60 * 1000, // cache for 1 minute
+    refetchOnWindowFocus: false, // disable aggressive refetches on focus
   });
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
-
-  // Real-time notification updates
-  useEffect(() => {
-    if (!socket) return;
-    const handleNewNotification = () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    };
-    socket.on('new-notification', handleNewNotification);
-    return () => {
-      socket.off('new-notification', handleNewNotification);
-    };
-  }, [socket, queryClient]);
 
   return (
     <header
@@ -91,9 +79,9 @@ export function Navbar() {
           <div className="hidden md:block">
             <div className="ml-10 flex items-center space-x-6">
               <Link href="/" onClick={playHitSound} className="text-white hover:text-goldAccent transition-colors px-2 py-2 rounded-md text-sm font-medium">Home</Link>
-              <Link href="/clubs" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Clubs</Link>
+              <Link href="/clubs" className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Clubs</Link>
               <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Experience</Link>
-              <Link href="/shop" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
+              <Link href="/shop" className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
 
               <div className="border-l border-white/20 pl-4 ml-2 flex items-center space-x-4 relative">
                 {isAuthenticated ? (
@@ -101,7 +89,6 @@ export function Navbar() {
                     {/* Header Favorites Link */}
                     <Link
                       href="/favorites"
-                      onClick={playHitSound}
                       className="relative p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors"
                       title="Favorites"
                     >
@@ -111,7 +98,6 @@ export function Navbar() {
                     {/* Header Notifications Link */}
                     <Link
                       href="/notifications"
-                      onClick={playHitSound}
                       className="relative p-2 rounded-full hover:bg-white/10 text-white/70 hover:text-white transition-colors mr-2"
                       title="Notifications"
                     >
@@ -148,12 +134,24 @@ export function Navbar() {
                                 <User className="w-4 h-4 text-zinc-400" />
                                 Profile
                               </Link>
-                              
+
                               {user?.role === 'CLUB_OWNER' ? (
                                 <>
                                   <Link href="/owner/dashboard" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                                     <UserCheck className="w-4 h-4 text-zinc-400" />
                                     Owner Dashboard
+                                  </Link>
+                                  <Link href="/owner/live-desk" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <Clock className="w-4 h-4 text-zinc-400 animate-pulse" />
+                                    Live Timer Desk
+                                  </Link>
+                                  <Link href="/owner/crm" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <User className="w-4 h-4 text-zinc-400" />
+                                    CRM Player Desk
+                                  </Link>
+                                  <Link href="/owner/finance" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
+                                    <Settings className="w-4 h-4 text-zinc-400" />
+                                    P&L Ledger Desk
                                   </Link>
                                   <Link href="/owner/bookings" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
                                     <Calendar className="w-4 h-4 text-zinc-400" />
@@ -256,7 +254,7 @@ export function Navbar() {
                   <>
                     <div className="px-3 py-2 text-sm text-gray-400 mb-2 truncate border-b border-white/5">{user?.email}</div>
                     <Link href="/profile" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Profile</Link>
-                    
+
                     {user?.role === 'CLUB_OWNER' ? (
                       <>
                         <Link href="/owner/dashboard" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Owner Dashboard</Link>
@@ -278,9 +276,9 @@ export function Navbar() {
                         </span>
                       )}
                     </Link>
-                    
+
                     <Link href="/settings" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Settings</Link>
-                    
+
                     <button onClick={handleLogout} className="text-red-400 hover:text-red-300 block w-full text-left px-3 py-2 rounded-md text-base font-medium">Logout</button>
                   </>
                 ) : (

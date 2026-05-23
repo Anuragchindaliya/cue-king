@@ -1,17 +1,20 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, Suspense, useEffect } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE_URL } from '@/config/api';
 import { useToast } from '@/components/ToastProvider';
+import { useAuthStore } from '@/store/authStore';
 import { motion } from 'framer-motion';
 import {
-  CreditCard,
   Store,
   ChevronRight,
   ShieldCheck,
   CheckCircle,
-  HelpCircle
+  HelpCircle,
+  QrCode,
+  Smartphone,
+  Info
 } from 'lucide-react';
 
 function PaymentContent() {
@@ -19,6 +22,7 @@ function PaymentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
+  const { token } = useAuthStore();
 
   const lobbyId = params.id as string;
   const bookingId = searchParams.get('bookingId') || '';
@@ -27,12 +31,29 @@ function PaymentContent() {
   const [paymentMode, setPaymentMode] = useState<'ONLINE' | 'OFFLINE'>('ONLINE');
   const [isProcessing, setIsProcessing] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [bookingDetails, setBookingDetails] = useState<any>(null);
 
-  // Form inputs for simulated card
-  const [cardName, setCardName] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCVV, setCardCVV] = useState('');
+  useEffect(() => {
+    if (bookingId && token) {
+      fetch(`${API_BASE_URL}/api/bookings/${bookingId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setBookingDetails(data.data);
+          }
+        })
+        .catch(err => console.error("Error fetching booking details:", err));
+    }
+  }, [bookingId, token]);
+
+  const upiId = bookingDetails?.club?.upiId || 'cueking@upi';
+  const clubName = bookingDetails?.club?.name || 'Cue King Club';
+  const upiLink = `upi://pay?pa=${upiId}&pn=${encodeURIComponent(clubName)}&am=${price}&cu=INR&tn=${encodeURIComponent('Lobby-' + lobbyId)}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(upiLink)}&color=000000&bgcolor=ffffff`;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,6 +64,7 @@ function PaymentContent() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           bookingId,
@@ -54,13 +76,12 @@ function PaymentContent() {
 
       if (data.success) {
         setSuccess(true);
-        showToast('Payment processed successfully!');
-        // Redirect will be broadcast to all members, but let's push host too in case
+        showToast('Payment submitted successfully!');
         setTimeout(() => {
           router.push(`/lobby/${lobbyId}/ticket?bookingId=${bookingId}&paymentType=${paymentMode}`);
         }, 1500);
       } else {
-        showToast(data.message || 'Payment processing failed');
+        showToast(data.message || 'Payment submission failed');
         setIsProcessing(false);
       }
     } catch (err) {
@@ -72,7 +93,7 @@ function PaymentContent() {
 
   return (
     <div className="min-h-screen bg-black text-white pt-28 pb-16 px-4 flex items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,215,0,0.03),transparent_70%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,255,100,0.03),transparent_70%)] pointer-events-none" />
 
       <div className="w-full max-w-lg bg-zinc-950/70 border border-zinc-800/80 rounded-3xl p-8 shadow-2xl relative backdrop-blur-xl">
         
@@ -85,9 +106,9 @@ function PaymentContent() {
             <div className="w-20 h-20 bg-emerald-500/10 border border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(16,185,129,0.2)]">
               <CheckCircle className="w-10 h-10 animate-bounce" />
             </div>
-            <h3 className="text-3xl font-extrabold text-white mb-2">Booking Confirmed!</h3>
+            <h3 className="text-3xl font-extrabold text-white mb-2">Booking Processing!</h3>
             <p className="text-zinc-400 text-sm max-w-xs mx-auto leading-relaxed">
-              Your payment has been finalized. Redirecting you and your lobby guests to the ticket stub...
+              Your booking status is updating. Settle offline with the vendor or wait for confirmation. Redirecting...
             </p>
           </motion.div>
         ) : (
@@ -100,7 +121,7 @@ function PaymentContent() {
             {/* Price Badge */}
             <div className="bg-white/5 border border-white/5 p-4 rounded-2xl flex justify-between items-center">
               <span className="text-zinc-400 text-sm">Total Due</span>
-              <span className="text-2xl font-extrabold text-goldAccent">₹{price}</span>
+              <span className="text-2xl font-extrabold text-snookerGreen">₹{price}</span>
             </div>
 
             {/* Payment Method Tabs */}
@@ -109,20 +130,20 @@ function PaymentContent() {
                 type="button"
                 onClick={() => setPaymentMode('ONLINE')}
                 className={`py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                  paymentMode === 'ONLINE' ? 'bg-zinc-850 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'
+                  paymentMode === 'ONLINE' ? 'bg-zinc-900 text-white border border-zinc-850 shadow-md' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                <CreditCard className="w-4 h-4" />
-                Pay Online
+                <Smartphone className="w-4 h-4 text-snookerGreen" />
+                Pay via UPI
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMode('OFFLINE')}
                 className={`py-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 ${
-                  paymentMode === 'OFFLINE' ? 'bg-zinc-850 text-white shadow-md' : 'text-zinc-500 hover:text-zinc-300'
+                  paymentMode === 'OFFLINE' ? 'bg-zinc-900 text-white border border-zinc-850 shadow-md' : 'text-zinc-500 hover:text-zinc-300'
                 }`}
               >
-                <Store className="w-4 h-4" />
+                <Store className="w-4 h-4 text-amber-500" />
                 Pay Offline Later
               </button>
             </div>
@@ -130,62 +151,43 @@ function PaymentContent() {
             {/* Checkout Options Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               {paymentMode === 'ONLINE' ? (
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-2">Cardholder Name</label>
-                    <input
-                      type="text"
-                      placeholder="Jane Doe"
-                      value={cardName}
-                      onChange={(e) => setCardName(e.target.value)}
-                      required
-                      className="w-full bg-black/60 border border-zinc-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-goldAccent transition-all"
+                <div className="space-y-6 flex flex-col items-center">
+                  <div className="bg-white p-4 rounded-2xl border border-zinc-800 shadow-lg inline-block">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="UPI QR Code" 
+                      className="w-48 h-48 block" 
                     />
                   </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-2">Card Number</label>
-                    <input
-                      type="text"
-                      placeholder="•••• •••• •••• ••••"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      maxLength={19}
-                      required
-                      className="w-full bg-black/60 border border-zinc-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-goldAccent transition-all"
-                    />
+                  
+                  <div className="text-center space-y-1.5 px-4">
+                    <p className="text-xs text-zinc-400">
+                      Scan QR code with any UPI app to pay
+                    </p>
+                    <p className="text-[10px] text-zinc-500 font-mono">
+                      UPI ID: {upiId}
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-2">Expiry Date</label>
-                      <input
-                        type="text"
-                        placeholder="MM/YY"
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
-                        maxLength={5}
-                        required
-                        className="w-full bg-black/60 border border-zinc-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-goldAccent transition-all"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-2">CVV</label>
-                      <input
-                        type="password"
-                        placeholder="•••"
-                        value={cardCVV}
-                        onChange={(e) => setCardCVV(e.target.value)}
-                        maxLength={3}
-                        required
-                        className="w-full bg-black/60 border border-zinc-850 rounded-xl px-4 py-3 text-xs text-white outline-none focus:border-goldAccent transition-all"
-                      />
-                    </div>
+                  {/* Deep Link for Mobile Browsers */}
+                  <a
+                    href={upiLink}
+                    className="w-full py-3 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl transition-all border border-zinc-800 flex items-center justify-center gap-2 shadow-inner"
+                  >
+                    <Smartphone className="w-4 h-4 text-snookerGreen" />
+                    Open in Mobile UPI App
+                  </a>
+
+                  <div className="p-4 rounded-2xl bg-zinc-900/50 border border-zinc-800/80 w-full flex gap-3 text-left">
+                    <Info className="w-5 h-5 text-snookerGreen shrink-0 mt-0.5" />
+                    <p className="text-[11px] text-zinc-400 leading-relaxed">
+                      Settle this pre-filled amount of <strong>₹{price}</strong> through UPI. Once done, tap the <strong>Confirm Payment</strong> button below. The owner will verify the transaction against bank credit.
+                    </p>
                   </div>
 
-                  <div className="text-[10px] text-zinc-500 flex items-center gap-1.5 pt-2">
+                  <div className="text-[10px] text-zinc-500 flex items-center gap-1.5 w-full justify-center">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                    Secure simulated checkout environment. No real money charged.
+                    Frictionless UPI Checkout. Zero Gateway Fees.
                   </div>
                 </div>
               ) : (
@@ -195,11 +197,11 @@ function PaymentContent() {
                     Offline Payment Confirmation
                   </div>
                   <p className="text-zinc-400 text-xs leading-relaxed">
-                    By choosing Pay Offline, your group booking request will be submitted to the club owner. Your group members will be redirected, and you can settle the amount directly with the vendor upon your arrival.
+                    By choosing Pay Offline, your booking request is logged and the owner will finalize reservation details when you arrive. You can settle the amount at the club counter.
                   </p>
                   <div className="text-[10px] text-zinc-500 flex items-center gap-1.5 pt-2">
                     <HelpCircle className="w-3.5 h-3.5 text-zinc-400" />
-                    Subject to club verification policies.
+                    Subject to club availability check.
                   </div>
                 </div>
               )}
@@ -207,13 +209,13 @@ function PaymentContent() {
               <button
                 type="submit"
                 disabled={isProcessing}
-                className="w-full py-4 bg-goldAccent hover:bg-goldAccent/90 text-black font-extrabold rounded-xl transition-all shadow-[0_0_15px_rgba(255,215,0,0.2)] disabled:opacity-50 flex items-center justify-center gap-2 text-sm mt-6"
+                className="w-full py-4 bg-snookerGreen hover:bg-snookerGreen/90 text-white font-extrabold rounded-xl transition-all shadow-[0_0_15px_rgba(0,185,100,0.2)] disabled:opacity-50 flex items-center justify-center gap-2 text-sm mt-6"
               >
                 {isProcessing ? (
-                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    {paymentMode === 'ONLINE' ? 'Pay Online (Free Simulation)' : 'Confirm Offline Booking'}
+                    {paymentMode === 'ONLINE' ? 'Confirm Payment Details' : 'Confirm Offline Booking'}
                     <ChevronRight className="w-4 h-4" />
                   </>
                 )}

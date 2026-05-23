@@ -48,6 +48,8 @@ export default function NotificationsPage() {
       return data.data;
     },
     enabled: !!token,
+    staleTime: 60 * 1000, // cache for 1 minute
+    refetchOnWindowFocus: false, // disable aggressive refetches on focus
   });
 
   // Listen to Server-Sent Events for notifications

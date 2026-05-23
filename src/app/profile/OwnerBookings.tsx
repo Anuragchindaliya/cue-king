@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/config/api';
 import { useAuthStore } from '@/store/authStore';
 import { Clock, Calendar, CheckCircle, XCircle, AlertCircle, User as UserIcon } from 'lucide-react';
-import { useSocket } from '@/providers/SocketProvider';
+import { useSSE } from '@/hooks/useSSE';
 import { useToast } from '@/components/ToastProvider';
 
 
@@ -23,7 +23,6 @@ export default function OwnerBookings() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const { token } = useAuthStore();
-  const { socket } = useSocket();
   const { showToast } = useToast();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -50,33 +49,24 @@ export default function OwnerBookings() {
     if (token) fetchBookings();
   }, [token]);
 
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewBooking = (booking: any) => {
-      showToast(`New booking request from ${booking.user?.name || booking.user?.email || 'Player'}`);
-      fetchBookings();
-    };
-
-    const handleBookingCancelled = (booking: any) => {
-      showToast(`Booking request withdrawn by ${booking.user?.name || booking.user?.email || 'Player'}`);
-      fetchBookings();
-    };
-
-    const handleBookingUpdated = (booking: any) => {
-      fetchBookings();
-    };
-
-    socket.on('new-booking', handleNewBooking);
-    socket.on('booking-cancelled', handleBookingCancelled);
-    socket.on('booking-updated', handleBookingUpdated);
-
-    return () => {
-      socket.off('new-booking', handleNewBooking);
-      socket.off('booking-cancelled', handleBookingCancelled);
-      socket.off('booking-updated', handleBookingUpdated);
-    };
-  }, [socket]);
+  // Listen to real-time events via SSE
+  useSSE({
+    url: token ? `${API_BASE_URL}/api/notifications/events` : '',
+    token: token,
+    events: {
+      'new-booking': (booking: any) => {
+        showToast(`New booking request from ${booking.user?.name || booking.user?.email || 'Player'}`);
+        fetchBookings();
+      },
+      'booking-cancelled': (booking: any) => {
+        showToast(`Booking request withdrawn by ${booking.user?.name || booking.user?.email || 'Player'}`);
+        fetchBookings();
+      },
+      'booking-updated': (booking: any) => {
+        fetchBookings();
+      }
+    }
+  });
 
   const updateStatus = async (id: string, status: 'CONFIRMED' | 'REJECTED') => {
     setActionLoading(id);

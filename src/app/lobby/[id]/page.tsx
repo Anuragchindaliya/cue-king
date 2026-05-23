@@ -109,6 +109,52 @@ export default function LobbyPage() {
     }
   }, [lobbyId, isAuthenticated, userToken]);
 
+  const notifAudioRef = useRef<HTMLAudioElement | null>(null);
+  const chatAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const notifAudio = new Audio('/sounds/notification.mp3');
+      const chatAudio = new Audio('/sounds/chat.mp3');
+      notifAudio.load();
+      chatAudio.load();
+      notifAudioRef.current = notifAudio;
+      chatAudioRef.current = chatAudio;
+
+      const unlock = () => {
+        if (notifAudioRef.current) {
+          notifAudioRef.current.play()
+            .then(() => {
+              notifAudioRef.current?.pause();
+              if (notifAudioRef.current) notifAudioRef.current.currentTime = 0;
+            })
+            .catch(() => {});
+        }
+        if (chatAudioRef.current) {
+          chatAudioRef.current.play()
+            .then(() => {
+              chatAudioRef.current?.pause();
+              if (chatAudioRef.current) chatAudioRef.current.currentTime = 0;
+            })
+            .catch(() => {});
+        }
+        window.removeEventListener('click', unlock);
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('keydown', unlock);
+      };
+
+      window.addEventListener('click', unlock);
+      window.addEventListener('touchstart', unlock);
+      window.addEventListener('keydown', unlock);
+
+      return () => {
+        window.removeEventListener('click', unlock);
+        window.removeEventListener('touchstart', unlock);
+        window.removeEventListener('keydown', unlock);
+      };
+    }
+  }, []);
+
   // Establish SSE Connection
   const { isConnected } = useSSE({
     url: activeToken ? `${API_BASE_URL}/api/lobby/${lobbyId}/events` : '',
@@ -117,10 +163,12 @@ export default function LobbyPage() {
       lobby_state_update: (newState: LobbyState) => {
         setLobbyState(newState);
         // Play notification sound on vote or membership change
-        if (soundEnabled && typeof Audio !== 'undefined') {
-          const audio = new Audio('/assets/notification.mp3');
-          audio.volume = 0.2;
-          audio.play().catch(() => { });
+        if (soundEnabled && notifAudioRef.current) {
+          try {
+            notifAudioRef.current.volume = 0.2;
+            notifAudioRef.current.currentTime = 0;
+            notifAudioRef.current.play().catch(() => { });
+          } catch (e) { }
         }
       },
       new_message: (message: any) => {
@@ -130,10 +178,12 @@ export default function LobbyPage() {
           if (prev.messages.some((m) => m.id === message.id)) return prev;
           return { ...prev, messages: [...prev.messages, message] };
         });
-        if (soundEnabled && typeof Audio !== 'undefined') {
-          const audio = new Audio('/assets/chat.mp3');
-          audio.volume = 0.15;
-          audio.play().catch(() => { });
+        if (soundEnabled && chatAudioRef.current) {
+          try {
+            chatAudioRef.current.volume = 0.15;
+            chatAudioRef.current.currentTime = 0;
+            chatAudioRef.current.play().catch(() => { });
+          } catch (e) { }
         }
       },
       booking_processing: (data: any) => {
@@ -474,8 +524,8 @@ export default function LobbyPage() {
               <button
                 onClick={handleToggleLock}
                 className={`flex-1 lg:flex-initial px-4 py-2.5 rounded-xl text-sm font-bold border transition-all flex items-center justify-center gap-2 ${lobbyState.isLocked
-                    ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20'
-                    : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
+                  ? 'bg-amber-500/10 border-amber-500/30 text-amber-500 hover:bg-amber-500/20'
+                  : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
                   }`}
               >
                 {lobbyState.isLocked ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
@@ -504,8 +554,8 @@ export default function LobbyPage() {
                 <div
                   key={member.id}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all ${isUserOnline
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                      : 'bg-zinc-800/20 border-zinc-800/50 text-zinc-500'
+                    ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                    : 'bg-zinc-800/20 border-zinc-800/50 text-zinc-500'
                     }`}
                 >
                   <span className={`w-1.5 h-1.5 rounded-full ${isUserOnline ? 'bg-emerald-400 animate-pulse' : 'bg-zinc-600'}`} />
@@ -541,8 +591,8 @@ export default function LobbyPage() {
                       onClick={() => isSelectable && handleVote('TIMESLOT', slot.id)}
                       disabled={!isSelectable}
                       className={`p-4 rounded-2xl border text-left transition-all ${userHasVoted
-                          ? 'bg-snookerGreen/20 border-snookerGreen text-white shadow-[0_0_15px_rgba(34,197,94,0.15)]'
-                          : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
+                        ? 'bg-snookerGreen/20 border-snookerGreen text-white shadow-[0_0_15px_rgba(34,197,94,0.15)]'
+                        : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
                         } ${!isSelectable ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
                       <div className="font-extrabold text-sm">{slot.display}</div>
@@ -584,8 +634,8 @@ export default function LobbyPage() {
                         onClick={() => isSelectable && handleVote('TABLE', table.id)}
                         disabled={!isSelectable}
                         className={`p-5 rounded-2xl border text-left transition-all ${userHasVoted
-                            ? 'bg-goldAccent/10 border-goldAccent text-white shadow-[0_0_15px_rgba(255,215,0,0.15)]'
-                            : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
+                          ? 'bg-goldAccent/10 border-goldAccent text-white shadow-[0_0_15px_rgba(255,215,0,0.15)]'
+                          : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
                           } ${!isSelectable ? 'opacity-80 cursor-not-allowed' : ''}`}
                       >
                         <div className="flex justify-between items-start">
@@ -633,8 +683,8 @@ export default function LobbyPage() {
                       onClick={() => isSelectable && handleVote('FOOD_PACKAGE', pkg.id)}
                       disabled={!isSelectable}
                       className={`w-full p-5 rounded-2xl border text-left transition-all ${userHasVoted
-                          ? 'bg-snookerGreen/10 border-snookerGreen/35 text-white'
-                          : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
+                        ? 'bg-snookerGreen/10 border-snookerGreen/35 text-white'
+                        : 'bg-white/5 border-white/10 text-zinc-300 hover:bg-white/10'
                         } ${!isSelectable ? 'opacity-80 cursor-not-allowed' : ''}`}
                     >
                       <div className="flex justify-between items-start gap-4">
