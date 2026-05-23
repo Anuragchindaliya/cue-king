@@ -9,9 +9,10 @@ export const metadata: Metadata = {
 
 async function getInitialClubs() {
   try {
-    // SSR Fetch from backend API
+    // SSR Fetch from backend API with 4s timeout to prevent Vercel timeouts
     const res = await fetch(`${API_BASE_URL}/api/clubs?limit=12`, {
-      cache: 'no-store' // Ensure we fetch fresh data on server
+      cache: 'no-store', // Ensure we fetch fresh data on server
+      signal: AbortSignal.timeout(4000)
     });
     const data = await res.json();
     // console.log("🚀 ~ getInitialClubs ~ data:", data)

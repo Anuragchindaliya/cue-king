@@ -207,12 +207,11 @@ export default function NotificationsPage() {
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     exit={{ opacity: 0, height: 0, margin: 0 }}
-                    className={`flex items-start justify-between p-5 rounded-2xl border backdrop-blur-md transition-all ${
-                      styles.bgColor
-                    } ${!notif.isRead ? 'shadow-[0_0_15px_rgba(34,197,94,0.05)] border-snookerGreen/20' : 'opacity-70'}`}
+                    className={`flex items-start justify-between p-5 rounded-2xl border backdrop-blur-md transition-all ${styles.bgColor
+                      } ${!notif.isRead ? 'shadow-[0_0_15px_rgba(34,197,94,0.05)] border-snookerGreen/20' : 'opacity-70'}`}
                   >
                     <div className="flex gap-4">
-                      <div className="mt-1 p-2 rounded-xl bg-black/40 border border-white/10 flex-shrink-0">
+                      <div className="m-auto p-2 rounded-xl bg-black/40 border border-white/10 flex-shrink-0">
                         {styles.icon}
                       </div>
                       <div className="space-y-1">

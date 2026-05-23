@@ -10,7 +10,8 @@ type Props = {
 async function getClub(id: string) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/clubs/${id}`, {
-      cache: 'no-store'
+      cache: 'no-store',
+      signal: AbortSignal.timeout(4000)
     });
     const data = await res.json();
     return data.success ? data.data : null;
