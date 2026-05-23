@@ -12,6 +12,7 @@ import { CallToAction } from '@/components/CallToAction';
 
 import { Footer } from '@/components/Footer';
 import { ClientProviders } from '@/providers/ClientProviders';
+import FABs from './FABs';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-sans' });
 
@@ -36,12 +37,11 @@ export default function RootLayout({
             <ClientProviders>
               <Navbar />
               <main>{children}</main>
-              <WhatsAppFloat />
-              <CallToAction />
+
               <Footer />
             </ClientProviders>
-            <VolumeControl />
-            <SoundCloudPlayer />
+            <FABs />
+
           </ToastProvider>
         </SoundProvider>
       </body>

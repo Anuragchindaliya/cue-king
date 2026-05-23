@@ -6,12 +6,69 @@ import { useMutation } from '@tanstack/react-query';
 import { API_BASE_URL } from '@/config/api';
 import { useSocket } from '@/providers/SocketProvider';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Calendar, CheckCircle2, RefreshCw, AlertCircle } from 'lucide-react';
+import { Clock, Calendar, CheckCircle2, RefreshCw, AlertCircle, Users, Lock, Unlock, X } from 'lucide-react';
 
 export default function BookingFlow({ club }: { club: any }) {
   const router = useRouter();
   const { socket, joinClubRoom, leaveClubRoom } = useSocket();
   const [step, setStep] = useState(1);
+  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+  const [groupData, setGroupData] = useState({
+    date: new Date().toISOString().split('T')[0],
+    time: '20:00',
+    allowVoting: true,
+  });
+
+  const createLobbyMutation = useMutation({
+    mutationFn: async () => {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      if (!token) {
+        throw new Error('UNAUTHORIZED');
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/lobby/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          clubId: club.id,
+          tentativeDate: groupData.date,
+          tentativeTime: groupData.time,
+          allowVoting: groupData.allowVoting
+        })
+      });
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to create group lobby');
+      }
+      return data.data; // contains lobbyId
+    },
+    onSuccess: (data) => {
+      localStorage.removeItem('pendingGroupLobby');
+      router.push(`/lobby/${data.lobbyId}`);
+    },
+    onError: (err: any) => {
+      if (err.message === 'UNAUTHORIZED') {
+        localStorage.setItem('pendingGroupLobby', JSON.stringify({ clubId: club.id }));
+        router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
+      } else {
+        alert(err.message || 'Failed to create group booking lobby');
+      }
+    }
+  });
+
+  const handleStartGroupBooking = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) {
+      localStorage.setItem('pendingGroupLobby', JSON.stringify({ clubId: club.id }));
+      router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
+      return;
+    }
+    setIsGroupModalOpen(true);
+  };
 
   // States
   const [tables, setTables] = useState<any[]>(club.tables || []);
@@ -83,7 +140,7 @@ export default function BookingFlow({ club }: { club: any }) {
   useEffect(() => {
     if (socket) {
       joinClubRoom(club.id);
-      
+
       const handleAvailabilityUpdate = (data: { clubId: string; tableId: string }) => {
         if (data.clubId === club.id) {
           fetchBookedSlots();
@@ -120,6 +177,18 @@ export default function BookingFlow({ club }: { club: any }) {
           console.error('Failed to parse pending booking', err);
         }
       }
+      const pendingGroup = localStorage.getItem('pendingGroupLobby');
+      if (pendingGroup) {
+        try {
+          const parsed = JSON.parse(pendingGroup);
+          if (parsed.clubId === club.id) {
+            setIsGroupModalOpen(true);
+            localStorage.removeItem('pendingGroupLobby');
+          }
+        } catch (err) {
+          console.error('Failed to parse pending group lobby', err);
+        }
+      }
     }
   }, [club.id]);
 
@@ -129,7 +198,7 @@ export default function BookingFlow({ club }: { club: any }) {
     const capsules = [];
     let [openHr] = open.split(':').map(Number);
     let [closeHr] = close.split(':').map(Number);
-    
+
     if (closeHr <= openHr) closeHr += 24;
 
     for (let i = openHr; i < closeHr; i++) {
@@ -150,12 +219,12 @@ export default function BookingFlow({ club }: { club: any }) {
   // Overlap verification helper
   const isSlotOverlap = (timeStr: string) => {
     if (!formData.tableId || !formData.date) return false;
-    
+
     const proposedStart = new Date(`${formData.date}T${timeStr}:00`);
     let [startHr] = timeStr.split(':').map(Number);
     let endHr = (startHr + formData.durationHours) % 24;
     const endStr = `${endHr.toString().padStart(2, '0')}:00`;
-    
+
     let proposedEnd = new Date(`${formData.date}T${endStr}:00`);
     if (endStr < timeStr) {
       proposedEnd.setDate(proposedEnd.getDate() + 1);
@@ -198,7 +267,7 @@ export default function BookingFlow({ club }: { club: any }) {
 
       const startDateTime = new Date(`${formData.date}T${formData.startTime}:00`).toISOString();
       let endDateObj = new Date(`${formData.date}T${formData.endTime}:00`);
-      
+
       if (formData.endTime < formData.startTime) {
         endDateObj.setDate(endDateObj.getDate() + 1);
       }
@@ -235,7 +304,7 @@ export default function BookingFlow({ club }: { club: any }) {
     },
     onError: (err: any) => {
       if (err.message === 'UNAUTHORIZED') {
-        localStorage.removeItem('token'); 
+        localStorage.removeItem('token');
         localStorage.setItem('pendingBooking', JSON.stringify({ ...formData, clubId: club.id }));
         router.push('/login?returnUrl=' + encodeURIComponent(`/club/${club.id}`));
       } else {
@@ -254,7 +323,7 @@ export default function BookingFlow({ club }: { club: any }) {
 
   if (step === 3) {
     return (
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         className="text-center py-10"
@@ -318,13 +387,12 @@ export default function BookingFlow({ club }: { club: any }) {
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, tableId: t.id, startTime: '', endTime: '' }));
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all ${
-                                isSelected
+                              className={`p-3 rounded-xl border text-left transition-all ${isSelected
                                   ? 'bg-snookerGreen/20 border-snookerGreen text-white shadow-[0_0_15px_rgba(34,197,94,0.15)]'
                                   : isMaintenance
-                                  ? 'bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
-                                  : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
-                              }`}
+                                    ? 'bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
+                                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                                }`}
                             >
                               <div className="font-bold text-sm truncate">{t.name}</div>
                               <div className="text-xs opacity-75 mt-0.5">₹{t.pricePerHour}/hr</div>
@@ -350,13 +418,12 @@ export default function BookingFlow({ club }: { club: any }) {
                               onClick={() => {
                                 setFormData(prev => ({ ...prev, tableId: t.id, startTime: '', endTime: '' }));
                               }}
-                              className={`p-3 rounded-xl border text-left transition-all ${
-                                isSelected
+                              className={`p-3 rounded-xl border text-left transition-all ${isSelected
                                   ? 'bg-snookerGreen/20 border-snookerGreen text-white shadow-[0_0_15px_rgba(34,197,94,0.15)]'
                                   : isMaintenance
-                                  ? 'bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
-                                  : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
-                              }`}
+                                    ? 'bg-white/5 border-white/5 text-gray-600 cursor-not-allowed opacity-50'
+                                    : 'bg-white/5 border-white/10 text-gray-300 hover:bg-white/10 hover:border-white/20'
+                                }`}
                             >
                               <div className="font-bold text-sm truncate">{t.name}</div>
                               <div className="text-xs opacity-75 mt-0.5">₹{t.pricePerHour}/hr</div>
@@ -393,7 +460,7 @@ export default function BookingFlow({ club }: { club: any }) {
                   <Clock className="w-4 h-4 text-goldAccent" />
                   <span>3. Choose Duration & Start Time</span>
                 </label>
-                <select 
+                <select
                   className="bg-black/50 border border-white/10 rounded px-2.5 py-1 text-xs text-white outline-none focus:border-snookerGreen"
                   value={formData.durationHours}
                   onChange={(e) => {
@@ -432,13 +499,12 @@ export default function BookingFlow({ club }: { club: any }) {
                         key={capsule.value}
                         disabled={isBooked}
                         onClick={() => handleTimeSelect(capsule.value)}
-                        className={`py-2.5 px-1 rounded-lg text-xs font-semibold border transition-all ${
-                          isSelected
+                        className={`py-2.5 px-1 rounded-lg text-xs font-semibold border transition-all ${isSelected
                             ? 'bg-goldAccent text-black border-goldAccent shadow-[0_0_12px_rgba(255,215,0,0.35)]'
                             : isBooked
-                            ? 'bg-white/5 text-gray-600 border-white/5 cursor-not-allowed line-through'
-                            : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:border-white/20'
-                        }`}
+                              ? 'bg-white/5 text-gray-600 border-white/5 cursor-not-allowed line-through'
+                              : 'bg-white/5 text-gray-300 border-white/10 hover:bg-white/10 hover:border-white/20'
+                          }`}
                       >
                         {capsule.display}
                       </button>
@@ -446,7 +512,7 @@ export default function BookingFlow({ club }: { club: any }) {
                   })}
                 </div>
               </div>
-              
+
               {/* Availability Legend */}
               <div className="flex gap-4 mt-3 text-[10px] text-gray-500 justify-end">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded bg-white/5 border border-white/10 inline-block"></span> Available</span>
@@ -458,13 +524,28 @@ export default function BookingFlow({ club }: { club: any }) {
             <button
               onClick={handleNext}
               disabled={!formData.startTime || !formData.tableId}
-              className={`w-full font-bold py-4 px-4 rounded-xl transition-all mt-6 flex items-center justify-center gap-2 ${
-                formData.startTime && formData.tableId
-                  ? 'bg-snookerGreen hover:bg-snookerGreen/90 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]' 
+              className={`w-full font-bold py-4 px-4 rounded-xl transition-all mt-6 flex items-center justify-center gap-2 ${formData.startTime && formData.tableId
+                  ? 'bg-snookerGreen hover:bg-snookerGreen/90 text-white shadow-[0_0_15px_rgba(34,197,94,0.3)]'
                   : 'bg-white/5 text-gray-500 cursor-not-allowed'
-              }`}
+                }`}
             >
               Review Booking Details &rarr;
+            </button>
+
+            <div className="relative flex items-center justify-center my-5">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-white/10"></span>
+              </div>
+              <span className="relative bg-[#0d0d0d] px-3 text-[10px] text-gray-500 uppercase tracking-wider">Or plan with friends</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleStartGroupBooking}
+              className="w-full font-bold py-3.5 px-4 rounded-xl bg-snookerGreen/10 hover:bg-snookerGreen/20 border border-snookerGreen/35 hover:border-snookerGreen/50 text-white transition-all flex items-center justify-center gap-2"
+            >
+              <Users className="w-4.5 h-4.5 text-snookerGreen" />
+              Start Group Booking Lobby
             </button>
           </motion.div>
         )}
@@ -483,7 +564,7 @@ export default function BookingFlow({ club }: { club: any }) {
                 <div className="flex justify-between items-center">
                   <span className="text-gray-400">Date</span>
                   <span className="text-white font-semibold text-base">
-                    {new Date(formData.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric'})}
+                    {new Date(formData.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -500,7 +581,7 @@ export default function BookingFlow({ club }: { club: any }) {
                     {selectedTable?.name || 'Selected Table'} ({selectedTable?.type === 'SNOOKER' ? 'Snooker' : 'Pool'})
                   </span>
                 </div>
-                
+
                 {/* Price Calculation */}
                 <div className="mt-6 pt-5 border-t border-white/10 flex justify-between items-center">
                   <span className="text-gray-300 font-medium">Estimated Total</span>
@@ -534,6 +615,102 @@ export default function BookingFlow({ club }: { club: any }) {
               </button>
             </div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Group Booking Setup Modal */}
+      <AnimatePresence>
+        {isGroupModalOpen && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-md bg-zinc-950 border border-white/15 rounded-3xl p-6 shadow-2xl relative"
+            >
+              <button
+                onClick={() => setIsGroupModalOpen(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-white/10 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-3 mb-6">
+                <div className="p-3 bg-snookerGreen/10 border border-snookerGreen/20 text-snookerGreen rounded-2xl">
+                  <Users className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Setup Group Booking</h3>
+                  <p className="text-xs text-gray-400">Invite friends to vote on tables and packages</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">
+                    Tentative Date
+                  </label>
+                  <input
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    value={groupData.date}
+                    onChange={(e) => setGroupData(prev => ({ ...prev, date: e.target.value }))}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-snookerGreen transition-all text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-300 mb-2 uppercase tracking-wider">
+                    Tentative Time
+                  </label>
+                  <input
+                    type="time"
+                    value={groupData.time}
+                    onChange={(e) => setGroupData(prev => ({ ...prev, time: e.target.value }))}
+                    className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-snookerGreen transition-all text-sm"
+                  />
+                </div>
+
+                <div className="p-4 bg-white/5 border border-white/5 rounded-2xl flex items-center justify-between gap-4 mt-6">
+                  <div className="flex-1">
+                    <div className="text-sm font-semibold text-white flex items-center gap-2">
+                      {groupData.allowVoting ? <Unlock className="w-4 h-4 text-emerald-400" /> : <Lock className="w-4 h-4 text-amber-400" />}
+                      Allow guest voting?
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      If enabled, guests can vote on packages and tables. If disabled, only the host can select them.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setGroupData(prev => ({ ...prev, allowVoting: !prev.allowVoting }))}
+                    className={`w-12 h-6 rounded-full p-0.5 transition-colors duration-200 focus:outline-none flex items-center ${groupData.allowVoting ? 'bg-snookerGreen justify-end' : 'bg-white/10 justify-start'
+                      }`}
+                  >
+                    <span className="w-5 h-5 rounded-full bg-white shadow-md block animate-pulse" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-8">
+                <button
+                  type="button"
+                  onClick={() => setIsGroupModalOpen(false)}
+                  className="w-1/3 py-3 border border-white/10 rounded-xl font-semibold text-gray-300 hover:bg-white/5 hover:text-white transition-all text-sm"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => createLobbyMutation.mutate()}
+                  disabled={createLobbyMutation.isPending}
+                  className="w-2/3 py-3 bg-snookerGreen hover:bg-snookerGreen/90 text-white font-bold rounded-xl transition-all shadow-[0_0_15px_rgba(34,197,94,0.25)] flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                >
+                  {createLobbyMutation.isPending ? 'Creating...' : 'Create Lobby '} &rarr;
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
       <style jsx global>{`

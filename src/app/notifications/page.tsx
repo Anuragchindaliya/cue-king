@@ -7,7 +7,7 @@ import { Bell, CheckCircle2, XCircle, Calendar, ShieldAlert, Sparkles, Eye } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_BASE_URL } from '@/config/api';
 import { useAuthStore } from '@/store/authStore';
-import { useSocket } from '@/providers/SocketProvider';
+import { useSSE } from '@/hooks/useSSE';
 
 interface Notification {
   id: string;
@@ -22,7 +22,6 @@ export default function NotificationsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated, initialize, token } = useAuthStore();
-  const { socket } = useSocket();
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -51,24 +50,20 @@ export default function NotificationsPage() {
     enabled: !!token,
   });
 
-  // Listen to socket event 'new-notification'
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewNotification = (newNotif: Notification) => {
-      queryClient.setQueryData<Notification[]>(['notifications'], (prev) => {
-        if (!prev) return [newNotif];
-        // Avoid duplicate appends if we query again
-        if (prev.some((n) => n.id === newNotif.id)) return prev;
-        return [newNotif, ...prev];
-      });
-    };
-
-    socket.on('new-notification', handleNewNotification);
-    return () => {
-      socket.off('new-notification', handleNewNotification);
-    };
-  }, [socket, queryClient]);
+  // Listen to Server-Sent Events for notifications
+  useSSE({
+    url: `${API_BASE_URL}/api/notifications/events`,
+    token: token,
+    events: {
+      'new-notification': (newNotif: Notification) => {
+        queryClient.setQueryData<Notification[]>(['notifications'], (prev) => {
+          if (!prev) return [newNotif];
+          if (prev.some((n) => n.id === newNotif.id)) return prev;
+          return [newNotif, ...prev];
+        });
+      }
+    }
+  });
 
   // Mutation: mark single notification as read
   const markReadMutation = useMutation({
