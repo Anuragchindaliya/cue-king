@@ -15,6 +15,8 @@ export default function EditProfilePage() {
   
   const [name, setName] = useState('');
   const [telegramChatId, setTelegramChatId] = useState('');
+  const [upiId, setUpiId] = useState('');
+  const [role, setRole] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
@@ -40,6 +42,8 @@ export default function EditProfilePage() {
         if (data.success) {
           setName(data.data.name || '');
           setTelegramChatId(data.data.telegramChatId || '');
+          setUpiId(data.data.upiId || '');
+          setRole(data.data.role || '');
         }
       } catch (err) {
         console.error('Failed to fetch profile', err);
@@ -60,7 +64,7 @@ export default function EditProfilePage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({ name, telegramChatId })
+        body: JSON.stringify({ name, telegramChatId, upiId })
       });
       const data = await res.json();
       if (data.success) {
@@ -120,6 +124,25 @@ export default function EditProfilePage() {
                 />
               </div>
             </div>
+
+            {role === 'CLUB_OWNER' && (
+              <div>
+                <label htmlFor="upiId" className="block text-sm font-medium text-gray-300">
+                  UPI ID (VPA)
+                </label>
+                <p className="text-xs text-gray-500 mb-2 mt-1">Default payment address for generated QR codes.</p>
+                <div className="mt-1">
+                  <input
+                    id="upiId"
+                    type="text"
+                    value={upiId}
+                    onChange={(e) => setUpiId(e.target.value)}
+                    className="appearance-none block w-full px-4 py-3 border border-white/10 rounded-xl shadow-sm placeholder-gray-500 bg-black/50 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent sm:text-sm text-white transition-all"
+                    placeholder="owner@upi"
+                  />
+                </div>
+              </div>
+            )}
 
             <div>
               <label htmlFor="telegramChatId" className="block text-sm font-medium text-gray-300">

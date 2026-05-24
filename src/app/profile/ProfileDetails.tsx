@@ -94,6 +94,16 @@ export default function ProfileDetails({ user: initialUser }: ProfileDetailsProp
             <p className="font-medium">{profile?.role === 'CLUB_OWNER' ? 'Owner' : profile?.role}</p>
           </div>
         </div>
+
+        {profile?.role === 'CLUB_OWNER' && (
+          <div className="flex items-center gap-4 text-zinc-300 bg-black/20 p-4 rounded-2xl">
+            <Edit3 className="w-5 h-5 text-green-400" />
+            <div className="flex-1">
+              <p className="text-xs text-zinc-500 uppercase tracking-wider font-semibold">Default UPI VPA</p>
+              <p className="font-medium font-mono">{profile?.upiId || 'Not provided'}</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <Link
