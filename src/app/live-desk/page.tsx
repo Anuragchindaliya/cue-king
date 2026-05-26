@@ -84,8 +84,9 @@ export default function PublicLiveDesk() {
       } else {
         // Seed default tables
         const defaultTables: Table[] = [
-          { id: 'table-1', name: 'Table 1', pricePerHour: 200, upiId: '' },
-          { id: 'table-2', name: 'Table 2', pricePerHour: 250, upiId: '' }
+          { id: 'table-1', name: 'Snooker Table', pricePerHour: 200, upiId: '' },
+          { id: 'table-2', name: '8 Ball Pool 1', pricePerHour: 150, upiId: '' },
+          { id: 'table-3', name: '8 Ball Pool 2', pricePerHour: 150, upiId: '' }
         ];
         setTables(defaultTables);
         localStorage.setItem('cue-king-public-tables', JSON.stringify(defaultTables));
@@ -226,7 +227,7 @@ export default function PublicLiveDesk() {
     const updatedTimers = timers.map(t => t.id === sessionId ? updatedSession : t);
     saveTimersToLocal(updatedTimers);
     showToast('Session stopped. Preparing checkout...');
-    
+
     // Open settle modal
     setSelectedTimerForSettle(updatedSession);
     setFinalAmount(updatedSession.finalAmount || 0);
@@ -312,7 +313,7 @@ export default function PublicLiveDesk() {
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,185,100,0.02),transparent_70%)] pointer-events-none" />
 
       <div className="max-w-7xl mx-auto space-y-8">
-        
+
         {/* Header toolbar */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 border-b border-white/10 pb-6">
           <div className="space-y-1">
@@ -364,11 +365,11 @@ export default function PublicLiveDesk() {
 
         {/* Workspace Layout */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-          
+
           {/* Left Grid: Tables list & Add Card */}
           <div className="xl:col-span-3 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              
+
               {tables.map((table) => {
                 const timer = timers.find(t => t.tableId === table.id && (t.status === 'RUNNING' || t.status === 'STOPPED'));
                 const isLive = timer && timer.status === 'RUNNING';
@@ -390,23 +391,22 @@ export default function PublicLiveDesk() {
                   <motion.div
                     key={table.id}
                     layout
-                    className={`bg-zinc-900/40 border rounded-3xl p-6 flex flex-col justify-between relative shadow-lg overflow-hidden transition-all ${
-                      isLive
-                        ? targetLimitReached
-                          ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
-                          : 'border-green-500/30'
-                        : isPendingSettle
+                    className={`bg-zinc-900/40 border rounded-3xl p-6 flex flex-col justify-between relative shadow-lg overflow-hidden transition-all ${isLive
+                      ? targetLimitReached
+                        ? 'border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.1)]'
+                        : 'border-green-500/30'
+                      : isPendingSettle
                         ? 'border-amber-500/40'
                         : 'border-zinc-800/80 hover:border-zinc-700'
-                    }`}
+                      }`}
                   >
                     {/* Status top bar indicators */}
                     {isLive && (
                       <div className="absolute top-0 inset-x-0 h-1 bg-green-500" />
                     )}
                     {isLive && timer.targetMinutes && (
-                      <div 
-                        className="absolute top-0 left-0 h-1 bg-red-500 transition-all duration-1000" 
+                      <div
+                        className="absolute top-0 left-0 h-1 bg-red-500 transition-all duration-1000"
                         style={{ width: `${targetProgress}%` }}
                       />
                     )}
@@ -428,27 +428,26 @@ export default function PublicLiveDesk() {
                             </button>
                           </div>
                           <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
-                            ₹{table.pricePerHour}/hr 
+                            ₹{table.pricePerHour}/hr
                             {table.upiId && ` • Specific VPA: ${table.upiId}`}
                           </p>
                         </div>
-                        
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${
-                          isLive
-                            ? targetLimitReached
-                              ? 'bg-red-500/10 text-red-500 border border-red-500/20'
-                              : 'bg-green-500/10 text-green-400 border border-green-500/20'
-                            : isPendingSettle
+
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-bold ${isLive
+                          ? targetLimitReached
+                            ? 'bg-red-500/10 text-red-500 border border-red-500/20'
+                            : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                          : isPendingSettle
                             ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                             : 'bg-zinc-800 text-zinc-400 border border-zinc-700'
-                        }`}>
-                          {isLive 
-                            ? targetLimitReached 
-                              ? 'Target Reached' 
+                          }`}>
+                          {isLive
+                            ? targetLimitReached
+                              ? 'Target Reached'
                               : 'Live Running'
                             : isPendingSettle
-                            ? 'Awaiting Settle'
-                            : 'Available'}
+                              ? 'Awaiting Settle'
+                              : 'Available'}
                         </span>
                       </div>
 
@@ -471,7 +470,7 @@ export default function PublicLiveDesk() {
                               ₹{estimateLiveCost(timer.startTime, table.pricePerHour)}
                             </span>
                           </div>
-                          
+
                           {timer.targetMinutes && (
                             <div className="flex justify-between items-center text-[9px] text-zinc-500 pt-1">
                               <span>Target: {timer.targetMinutes} Mins</span>
@@ -570,7 +569,7 @@ export default function PublicLiveDesk() {
           {/* Right Column: Local ledger history */}
           <div className="xl:col-span-1">
             <div className="bg-[#111] border border-white/10 rounded-3xl p-6 md:p-8 space-y-6 h-full flex flex-col justify-between">
-              
+
               <div className="space-y-6">
                 <h3 className="text-base font-bold flex items-center justify-between text-white border-b border-white/10 pb-4">
                   <span className="flex items-center gap-2">
@@ -822,7 +821,7 @@ export default function PublicLiveDesk() {
               </p>
 
               <div className="space-y-6">
-                
+
                 {/* Editable bill amount */}
                 <div className="bg-white/5 p-4 rounded-xl border border-zinc-800 flex justify-between items-center">
                   <div>
