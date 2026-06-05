@@ -17,6 +17,8 @@ const products = [
   { name: 'Chalk Box (12pcs)', price: '₹120', type: 'Accessories', image: img4 },
 ];
 
+import Link from 'next/link';
+
 export function Shop() {
   const { showToast } = useToast();
   const [cart, setCart] = useState<string[]>([]);
@@ -47,12 +49,12 @@ export function Shop() {
                 <Check size={14} /> {cart.length} Waitlisted
               </span>
             )}
-            <button 
-              onClick={() => showToast('Full catalog layout loading soon.')}
+            <Link 
+              href="/shop"
               className="group flex items-center gap-2 text-goldAccent font-medium hover:text-white transition-colors"
             >
               View All Equipment <ShoppingBag size={20} className="group-hover:translate-x-1 transition-transform" />
-            </button>
+            </Link>
           </div>
         </div>
 

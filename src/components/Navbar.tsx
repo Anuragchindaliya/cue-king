@@ -22,6 +22,7 @@ export function Navbar() {
   const router = useRouter();
 
   const { isAuthenticated, user, logout } = useAuthStore();
+  console.log("🚀 ~ Navbar ~ user:", user)
 
   const handleLogout = () => {
     playHitSound();
@@ -128,7 +129,7 @@ export function Navbar() {
                             className="absolute right-0 mt-2 w-52 bg-[#111] border border-white/10 rounded-xl shadow-xl overflow-hidden backdrop-blur-md z-50"
                           >
                             <div className="p-2.5 border-b border-white/5 bg-white/2">
-                              <p className="text-xs text-gray-400 px-1 truncate font-medium">{user?.email}</p>
+                              <p className="text-xs text-gray-400 px-1 truncate font-medium">{user?.role}</p>
                             </div>
                             <div className="p-1.5 space-y-0.5">
                               <Link href="/profile" onClick={() => setIsProfileMenuOpen(false)} className="flex items-center gap-2.5 px-3 py-2 text-sm text-gray-300 hover:text-white hover:bg-white/5 rounded-lg transition-colors">
@@ -254,7 +255,7 @@ export function Navbar() {
               <div className="border-t border-white/10 mt-4 pt-4 pb-2">
                 {isAuthenticated ? (
                   <>
-                    <div className="px-3 py-2 text-sm text-gray-400 mb-2 truncate border-b border-white/5">{user?.email}</div>
+                    <div className="px-3 py-2 text-sm text-gray-400 mb-2 truncate border-b border-white/5">{user?.role}</div>
                     <Link href="/profile" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Profile</Link>
 
                     {user?.role === 'CLUB_OWNER' ? (

@@ -1,11 +1,36 @@
-import { Shop } from "@/components/Shop";
+import ShopClient from './ShopClient';
+import { API_BASE_URL } from '@/config/api';
+import { Metadata } from 'next';
 import { Location } from "@/components/Location";
 
-export default function ShopPage() {
+export const metadata: Metadata = {
+  title: 'Pro Shop & P2P Marketplace | Cue King',
+  description: 'Buy and sell new or gently used snooker cues, pool tables, and elite cue accessories. Chat and negotiate directly with local sellers.',
+};
+
+export const revalidate = 60; // Incremental Static Regeneration: revalidate every 60s
+
+async function getProducts() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/products`, {
+      next: { revalidate: 60 },
+      signal: AbortSignal.timeout(5000),
+    });
+    const data = await res.json();
+    return data.success ? data.data : [];
+  } catch (error) {
+    console.error('Failed to fetch marketplace products for SSR:', error);
+    return [];
+  }
+}
+
+export default async function ShopPage() {
+  const initialProducts = await getProducts();
+
   return (
     <div className="pt-24 min-h-screen relative z-10 flex flex-col">
       <div className="flex-1">
-        <Shop />
+        <ShopClient initialProducts={initialProducts} />
       </div>
       <Location />
       <footer className="py-8 text-center text-white/40 text-sm border-t border-white/10 mt-auto bg-black/80 flex flex-col items-center gap-2">
