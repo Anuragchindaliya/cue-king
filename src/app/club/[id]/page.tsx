@@ -7,10 +7,12 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
+export const revalidate = 60; // Incremental Static Regeneration: revalidate every 60s
+
 async function getClub(id: string) {
   try {
     const res = await fetch(`${API_BASE_URL}/api/clubs/${id}`, {
-      cache: 'no-store',
+      next: { revalidate: 60 },
       signal: AbortSignal.timeout(4000)
     });
     const data = await res.json();

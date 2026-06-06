@@ -5,7 +5,7 @@ import { Menu, X, User, LogOut, ChevronDown, Bell, Heart, Settings, Calendar, Us
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { BookingModal } from '@/components/BookingModal';
 import { useHitSound } from '@/hooks/useHitSound';
@@ -20,6 +20,7 @@ export function Navbar() {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const playHitSound = useHitSound();
   const router = useRouter();
+  const pathname = usePathname();
 
   const { isAuthenticated, user, logout } = useAuthStore();
   console.log("🚀 ~ Navbar ~ user:", user)
@@ -205,8 +206,8 @@ export function Navbar() {
                   </div>
                 ) : (
                   <>
-                    <Link href="/login" className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
-                    <Link href="/signup" className="text-green-300 hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
+                    <Link href={`/login?returnUrl=${encodeURIComponent(pathname)}`} className="text-white/70 hover:text-white transition-colors text-sm font-medium">Login</Link>
+                    <Link href={`/signup?returnUrl=${encodeURIComponent(pathname)}`} className="text-green-300 hover:text-snookerGreen/80 transition-colors text-sm font-medium">Sign Up</Link>
                   </>
                 )}
               </div>
@@ -286,8 +287,8 @@ export function Navbar() {
                   </>
                 ) : (
                   <>
-                    <Link href="/login" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Login</Link>
-                    <Link href="/signup" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-snookerGreen hover:text-snookerGreen/80 block px-3 py-2 rounded-md text-base font-medium">Sign Up</Link>
+                    <Link href={`/login?returnUrl=${encodeURIComponent(pathname)}`} onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Login</Link>
+                    <Link href={`/signup?returnUrl=${encodeURIComponent(pathname)}`} onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-snookerGreen hover:text-snookerGreen/80 block px-3 py-2 rounded-md text-base font-medium">Sign Up</Link>
                   </>
                 )}
               </div>

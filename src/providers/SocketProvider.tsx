@@ -67,7 +67,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     token: token,
     events: {
       'new-notification': (notif: { title: string; message: string }) => {
-        showToast(`${notif.title}: ${notif.message}`);
+        const displayMessage = notif.message.replace(/ \[\s*Room ID:\s*[a-f0-9\-]+\s*\]/gi, '');
+        showToast(`${notif.title}: ${displayMessage}`);
         // Play notification sound
         try {
           if (audioRef.current) {

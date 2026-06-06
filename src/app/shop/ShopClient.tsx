@@ -11,6 +11,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useSocket } from '@/providers/SocketProvider';
 import { useToast } from '@/components/ToastProvider';
 import { API_BASE_URL } from '@/config/api';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Helper for calculating geographical distance in km using Haversine formula
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -98,6 +99,8 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   const { user, token, isAuthenticated } = useAuthStore();
   const { socket, isConnected } = useSocket();
   const { showToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Core State
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -120,6 +123,19 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     }
   }, []);
 
+  // Deep linking and redirects after login
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const openCreateParam = searchParams.get('openCreate');
+
+    if (isAuthenticated && token) {
+      if (openCreateParam === 'true') {
+        setIsCreateDrawerOpen(true);
+        router.replace('/shop');
+      }
+    }
+  }, [searchParams, isAuthenticated, token]);
+
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState('');
   const [minPrice, setMinPrice] = useState('');
@@ -131,10 +147,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   const [viewTab, setViewTab] = useState<'all' | 'my'>('all');
 
   // Modal / Drawer States
-  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
   const [isCreateDrawerOpen, setIsCreateDrawerOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editProductId, setEditProductId] = useState<string | null>(null);
 
   // Form State
   const [formName, setFormName] = useState('');
@@ -150,14 +163,6 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
   const [formClubId, setFormClubId] = useState('');
   const [myClubs, setMyClubs] = useState<{ id: string; name: string }[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Chat Panel State
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
-  const [messageText, setMessageText] = useState('');
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // Fetch my clubs for the dropdown (if club owner)
   useEffect(() => {
@@ -211,141 +216,6 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     refreshProducts();
   }, [viewTab, searchQuery, minPrice, maxPrice, selectedCondition]);
 
-  // Fetch chat rooms
-  const loadChatRooms = async () => {
-    if (!isAuthenticated || !token) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/product-chats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setChatRooms(data.data);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    if (isChatOpen) {
-      loadChatRooms();
-    }
-  }, [isChatOpen]);
-
-  // Handle live chat room messages
-  const loadRoomMessages = async (roomId: string) => {
-    if (!token) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/product-chats/${roomId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setChatMessages(data.data.messages);
-        setActiveRoomId(roomId);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  // Setup sockets for incoming chat messages
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleNewMessage = (data: { roomId: string; message: ChatMessage }) => {
-      // If active chat room, append message
-      if (activeRoomId === data.roomId) {
-        setChatMessages(prev => [...prev, data.message]);
-      }
-      
-      // Update snippet in rooms list
-      setChatRooms(prevRooms => {
-        return prevRooms.map(room => {
-          if (room.id === data.roomId) {
-            return {
-              ...room,
-              updatedAt: new Date().toISOString(),
-              messages: [data.message]
-            };
-          }
-          return room;
-        }).sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      });
-
-      // Play soft toast if message received from someone else and chat is not open
-      if (data.message.senderId !== user?.id) {
-        showToast(`New message from ${data.message.sender.name || 'buyer'}: "${data.message.message}"`);
-      }
-    };
-
-    socket.on('new-product-message', handleNewMessage);
-
-    return () => {
-      socket.off('new-product-message', handleNewMessage);
-    };
-  }, [socket, activeRoomId, user]);
-
-  // Scroll to bottom of chat
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  // Start chat with seller
-  const handleStartChat = async (product: Product) => {
-    if (!isAuthenticated || !token) {
-      showToast('Please login to message the seller.');
-      return;
-    }
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/product-chats`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ productId: product.id })
-      });
-      const data = await res.json();
-      if (data.success) {
-        const room = data.data;
-        setDetailProduct(null); // Close detail drawer
-        setIsChatOpen(true); // Open inbox drawer
-        await loadRoomMessages(room.id);
-        await loadChatRooms();
-      } else {
-        showToast(data.message || 'Could not start chat');
-      }
-    } catch (err) {
-      showToast('Error starting negotiation');
-    }
-  };
-
-  // Send private chat message
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!messageText.trim() || !activeRoomId || !token) return;
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/product-chats/${activeRoomId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ message: messageText })
-      });
-      const data = await res.json();
-      if (data.success) {
-        setMessageText('');
-        // Socket broadcast handles the appending automatically for us!
-      }
-    } catch (err) {
-      showToast('Failed to send message');
-    }
-  };
-
   // Geolocation auto-detection inside Form
   const handleAutoDetectFormLocation = () => {
     if (navigator.geolocation) {
@@ -382,11 +252,9 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     setFormImage(null);
     setImagePreview(null);
     setFormClubId('');
-    setIsEditing(false);
-    setEditProductId(null);
   };
 
-  // Create or Update Ad
+  // Create Ad
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formName || !formPrice) {
@@ -408,14 +276,9 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     if (formImage) formData.append('image', formImage);
 
     try {
-      const url = isEditing 
-        ? `${API_BASE_URL}/api/products/${editProductId}`
-        : `${API_BASE_URL}/api/products`;
-        
-      const method = isEditing ? 'PUT' : 'POST';
-
+      const url = `${API_BASE_URL}/api/products`;
       const res = await fetch(url, {
-        method,
+        method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
         },
@@ -424,7 +287,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
 
       const data = await res.json();
       if (data.success) {
-        showToast(isEditing ? 'Ad updated successfully!' : 'Ad created successfully!');
+        showToast('Ad created successfully!');
         resetForm();
         setIsCreateDrawerOpen(false);
         refreshProducts();
@@ -438,68 +301,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
     }
   };
 
-  // Edit product trigger
-  const handleEditClick = (product: Product) => {
-    setIsEditing(true);
-    setEditProductId(product.id);
-    setFormName(product.name);
-    setFormPrice(product.price.toString());
-    setFormDescription(product.description || '');
-    setFormCondition(product.condition || 'NEW');
-    setFormAge(product.age || '');
-    setFormLocationName(product.locationName || '');
-    setFormLat(product.lat || null);
-    setFormLng(product.lng || null);
-    setFormClubId(product.club?.id || '');
-    setImagePreview(product.image ? `${product.image}` : null);
-    setDetailProduct(null); // Close detail drawer
-    setIsCreateDrawerOpen(true); // Open edit drawer
-  };
 
-  // Delete Ad
-  const handleDeleteProduct = async (productId: string) => {
-    if (!confirm('Are you sure you want to delete this listing?')) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/products/${productId}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast('Listing deleted.');
-        setDetailProduct(null);
-        refreshProducts();
-      } else {
-        showToast(data.message || 'Could not delete product');
-      }
-    } catch (err) {
-      showToast('Error during deletion');
-    }
-  };
-
-  // Toggle status (Active / Sold)
-  const handleToggleStatus = async (product: Product, newStatus: string) => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/products/${product.id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: newStatus })
-      });
-      const data = await res.json();
-      if (data.success) {
-        showToast(`Product status updated to ${newStatus}`);
-        setDetailProduct(null);
-        refreshProducts();
-      } else {
-        showToast(data.message || 'Could not update status');
-      }
-    } catch (e) {
-      showToast('Error updating status');
-    }
-  };
 
   // Filter products on client (mainly coordinates distance filter)
   const processedProducts = products.filter(product => {
@@ -562,7 +364,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
             {/* Chat Inbox Button */}
             {isAuthenticated && (
               <button 
-                onClick={() => setIsChatOpen(true)}
+                onClick={() => router.push('/shop/chat')}
                 className="relative flex items-center gap-2 px-5 py-2 bg-[#111] border border-white/10 rounded-full text-sm font-bold hover:bg-white/5 hover:border-goldAccent/30 transition-all text-goldAccent"
               >
                 <MessageSquare size={16} /> Negotiation Inbox
@@ -574,6 +376,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
               onClick={() => {
                 if (!isAuthenticated) {
                   showToast('Please login to post a listing.');
+                  router.push(`/login?returnUrl=${encodeURIComponent('/shop?openCreate=true')}`);
                   return;
                 }
                 resetForm();
@@ -768,7 +571,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                           ? 'border-white/5 opacity-60' 
                           : 'border-white/10 hover:border-snookerGreen/50 shadow-lg hover:shadow-snookerGreen/5'
                       }`}
-                      onClick={() => setDetailProduct(product)}
+                      onClick={() => router.push(`/shop/${product.id}`)}
                     >
                       {/* Product Image */}
                       <div className="h-48 w-full bg-zinc-900 relative overflow-hidden flex items-center justify-center">
@@ -856,178 +659,7 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
       {/* ─────────────────────────────────────────────────────────────────────────────
           PRODUCT DETAIL DRAWER (Slide in from right)
           ───────────────────────────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {detailProduct && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDetailProduct(null)}
-              className="fixed inset-0 bg-black z-40"
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:max-w-md bg-[#0d0d0d] border-l border-white/10 p-6 sm:p-8 z-50 overflow-y-auto flex flex-col justify-between"
-            >
-              <div>
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-lg font-bold text-white/50">Product Details</h3>
-                  <button 
-                    onClick={() => setDetailProduct(null)}
-                    className="p-1.5 hover:bg-white/5 rounded-full text-white/70 hover:text-white transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
 
-                {/* Image */}
-                <div className="h-60 w-full bg-zinc-950 rounded-xl relative overflow-hidden mb-6 flex items-center justify-center border border-white/5">
-                  {detailProduct.image ? (
-                    <img 
-                      src={detailProduct.image} 
-                      alt={detailProduct.name}
-                      className="object-contain w-full h-full"
-                    />
-                  ) : (
-                    <ShoppingBag size={48} className="text-white/10" />
-                  )}
-
-                  {detailProduct.status === 'SOLD' && (
-                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                      <span className="px-5 py-2 border-2 border-red-500 bg-black text-red-500 font-extrabold text-sm uppercase tracking-widest rounded-lg transform -rotate-12">
-                        Sold Out
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Price, Name & Date */}
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-3xl font-black text-white">₹{detailProduct.price.toLocaleString()}</span>
-                    {detailProduct.condition && (
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-wider text-black ${
-                        detailProduct.condition === 'NEW' 
-                          ? 'bg-snookerGreen text-white' 
-                          : detailProduct.condition === 'GENTLE_USE'
-                          ? 'bg-goldAccent text-black'
-                          : 'bg-red-400 text-black'
-                      }`}>
-                        {detailProduct.condition === 'GENTLE_USE' ? 'Gentle Use' : detailProduct.condition === 'HEAVILY_USED' ? 'Moderate Use' : detailProduct.condition}
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="text-xl font-bold text-white mb-2 leading-tight">{detailProduct.name}</h2>
-                  <p className="text-[10px] text-white/40 font-bold flex items-center gap-1 uppercase tracking-wider">
-                    <Calendar size={12} /> Posted on {new Date(detailProduct.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-
-                {/* Description */}
-                <div className="bg-[#151515] border border-white/5 rounded-xl p-4 mb-6">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-white/40 mb-2">Description</h4>
-                  <p className="text-sm text-white/80 leading-relaxed whitespace-pre-wrap">
-                    {detailProduct.description || 'No description provided.'}
-                  </p>
-                </div>
-
-                {/* Specifications List */}
-                <div className="space-y-3 mb-6">
-                  {detailProduct.age && (
-                    <div className="flex justify-between items-center border-b border-white/5 py-2 text-sm">
-                      <span className="text-white/40 font-medium">Age of Product</span>
-                      <span className="text-white/80 font-bold">{detailProduct.age}</span>
-                    </div>
-                  )}
-                  {detailProduct.locationName && (
-                    <div className="flex justify-between items-center border-b border-white/5 py-2 text-sm">
-                      <span className="text-white/40 font-medium">Location</span>
-                      <span className="text-white/80 font-bold text-right max-w-[200px] truncate">{detailProduct.locationName}</span>
-                    </div>
-                  )}
-                  {detailProduct.club && (
-                    <div className="flex justify-between items-center border-b border-white/5 py-2 text-sm">
-                      <span className="text-white/40 font-medium">Associated Club</span>
-                      <span className="text-goldAccent font-bold">{detailProduct.club.name}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Owner Information */}
-                <div className="bg-[#151515] border border-white/5 rounded-xl p-4 mb-6">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-white/40 mb-3">Seller Details</h4>
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-snookerGreen/20 border border-snookerGreen flex items-center justify-center text-snookerGreen font-bold">
-                      {(detailProduct.owner?.name || 'S')[0].toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold">{detailProduct.owner?.name || 'Anonymous User'}</p>
-                      <p className="text-xs text-white/40">{detailProduct.owner?.email}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Phone Number reveal (if chat started or is owner) */}
-                  {detailProduct.owner?.phoneNumber && (
-                    <div className="mt-4 border-t border-white/5 pt-3 flex items-center justify-between text-xs text-white/60">
-                      <span className="flex items-center gap-1.5"><Phone size={12} className="text-goldAccent" /> Contact Seller:</span>
-                      <span className="font-mono font-bold tracking-wider">{detailProduct.owner.phoneNumber}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="pt-4 border-t border-white/10 flex flex-col gap-3">
-                {user?.id === detailProduct.ownerId ? (
-                  <>
-                    <button 
-                      onClick={() => handleEditClick(detailProduct)}
-                      className="w-full py-3 bg-white/10 border border-white/15 rounded-xl text-sm font-bold text-white hover:bg-white/20 transition-all flex items-center justify-center gap-2"
-                    >
-                      Edit Ad
-                    </button>
-                    {detailProduct.status !== 'SOLD' && (
-                      <button 
-                        onClick={() => handleToggleStatus(detailProduct, 'SOLD')}
-                        className="w-full py-3 bg-red-500/10 border border-red-500/25 rounded-xl text-sm font-bold text-red-400 hover:bg-red-500/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        Mark as Sold
-                      </button>
-                    )}
-                    {detailProduct.status === 'SOLD' && (
-                      <button 
-                        onClick={() => handleToggleStatus(detailProduct, 'ACTIVE')}
-                        className="w-full py-3 bg-snookerGreen/10 border border-snookerGreen/20 rounded-xl text-sm font-bold text-snookerGreen hover:bg-snookerGreen/20 transition-all flex items-center justify-center gap-2"
-                      >
-                        Republish Ad (Active)
-                      </button>
-                    )}
-                    <button 
-                      onClick={() => handleDeleteProduct(detailProduct.id)}
-                      className="w-full py-3 bg-red-500/20 hover:bg-red-500 border border-red-500/30 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Trash2 size={14} /> Delete Listing
-                    </button>
-                  </>
-                ) : (
-                  detailProduct.status !== 'SOLD' && (
-                    <button 
-                      onClick={() => handleStartChat(detailProduct)}
-                      className="w-full py-3.5 bg-gradient-to-r from-snookerGreen to-snookerGreen/80 hover:from-snookerGreen hover:to-snookerGreen text-white rounded-xl text-sm font-extrabold transition-all shadow-md shadow-snookerGreen/20 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <MessageSquare size={16} /> Chat & Negotiate
-                    </button>
-                  )
-                )}
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
 
       {/* ─────────────────────────────────────────────────────────────────────────────
           PRODUCT CREATION / EDIT DRAWER (Slide in from right)
@@ -1043,18 +675,18 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                 setIsCreateDrawerOpen(false);
                 resetForm();
               }}
-              className="fixed inset-0 bg-black z-40"
+              className="fixed inset-0 bg-black z-[55]"
             />
             <motion.div
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:max-w-md bg-[#0d0d0d] border-l border-white/10 p-6 sm:p-8 z-50 overflow-y-auto flex flex-col"
+              className="fixed top-0 right-0 h-full w-full sm:max-w-md bg-[#0d0d0d] border-l border-white/10 p-6 sm:p-8 z-[60] overflow-y-auto flex flex-col"
             >
               <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
                 <h2 className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-snookerGreen to-goldAccent flex items-center gap-2">
-                  {isEditing ? 'Edit Listing' : 'Post Ad Listing'} <Sparkles size={16} className="text-goldAccent" />
+                  Post Ad Listing <Sparkles size={16} className="text-goldAccent" />
                 </h2>
                 <button 
                   onClick={() => {
@@ -1225,143 +857,10 @@ export default function ShopClient({ initialProducts }: { initialProducts: Produ
                     disabled={isSubmitting}
                     className="flex-1 py-3 bg-gradient-to-r from-snookerGreen to-snookerGreen/80 hover:from-snookerGreen hover:to-snookerGreen text-white rounded-xl text-sm font-extrabold transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-snookerGreen/15"
                   >
-                    {isSubmitting ? 'Posting...' : isEditing ? 'Save Changes' : 'Publish Ad'}
+                    {isSubmitting ? 'Posting...' : 'Publish Ad'}
                   </button>
                 </div>
               </form>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      {/* ─────────────────────────────────────────────────────────────────────────────
-          NEGOTIATION INBOX / CHAT PANEL (Slide in from right)
-          ───────────────────────────────────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {isChatOpen && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.5 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsChatOpen(false)}
-              className="fixed inset-0 bg-black z-40"
-            />
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full sm:max-w-3xl bg-[#0d0d0d] border-l border-white/10 z-50 flex overflow-hidden"
-            >
-              
-              {/* Inbox Sidebar (Rooms List) */}
-              <div className="w-1/3 border-r border-white/10 flex flex-col h-full bg-black/40">
-                <div className="p-4 border-b border-white/15 flex items-center justify-between">
-                  <h3 className="font-bold text-sm text-white/80">Inbox Threads</h3>
-                  <div className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-snookerGreen animate-pulse' : 'bg-red-500'}`} title={isConnected ? 'Real-time active' : 'Offline'}></div>
-                </div>
-                
-                <div className="flex-1 overflow-y-auto divide-y divide-white/5">
-                  {chatRooms.length === 0 ? (
-                    <p className="text-xs text-white/30 text-center p-6 mt-12">No active negotiations.</p>
-                  ) : (
-                    chatRooms.map((room) => {
-                      const isRoomActive = activeRoomId === room.id;
-                      const otherUser = user?.id === room.buyerId ? room.seller : room.buyer;
-                      const lastMsg = room.messages?.[0]?.message || 'No messages yet';
-
-                      return (
-                        <div
-                          key={room.id}
-                          onClick={() => loadRoomMessages(room.id)}
-                          className={`p-4 cursor-pointer hover:bg-white/2 transition-colors flex flex-col gap-1 text-left ${isRoomActive ? 'bg-white/5 border-l-2 border-snookerGreen' : ''}`}
-                        >
-                          <div className="flex justify-between items-center gap-2">
-                            <span className="text-xs font-extrabold text-white truncate max-w-[120px]">{otherUser?.name || otherUser?.email}</span>
-                            <span className="text-[10px] text-goldAccent font-black">₹{room.product.price}</span>
-                          </div>
-                          <span className="text-[10px] font-bold text-white/40 truncate">{room.product.name}</span>
-                          <p className="text-[10px] text-white/60 truncate mt-1">{lastMsg}</p>
-                        </div>
-                      )
-                    })
-                  )}
-                </div>
-              </div>
-
-              {/* Chat Thread Workspace */}
-              <div className="flex-1 flex flex-col h-full bg-[#0d0d0d]">
-                <div className="p-4 border-b border-white/15 flex items-center justify-between bg-black/10">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-sm text-white">
-                      {activeRoomId ? 'Active Conversation' : 'Select a Thread'}
-                    </h3>
-                  </div>
-                  <button 
-                    onClick={() => setIsChatOpen(false)}
-                    className="p-1.5 hover:bg-white/5 rounded-full text-white/70 hover:text-white transition-colors"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {activeRoomId ? (
-                  <>
-                    {/* Active Conversation messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {chatMessages.map((msg) => {
-                        const isMe = msg.senderId === user?.id;
-                        return (
-                          <div 
-                            key={msg.id}
-                            className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}
-                          >
-                            <div className="flex items-center gap-1.5 text-[9px] text-white/40 font-bold mb-1 px-1">
-                              <span>{isMe ? 'Me' : msg.sender.name || 'User'}</span>
-                              <span>•</span>
-                              <span>{new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                            </div>
-                            
-                            <div className={`max-w-[85%] px-4 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                              isMe 
-                                ? 'bg-snookerGreen text-white rounded-tr-none' 
-                                : 'bg-[#151515] border border-white/5 text-white/95 rounded-tl-none'
-                            }`}>
-                              {msg.message}
-                            </div>
-                          </div>
-                        )
-                      })}
-                      <div ref={chatEndRef} />
-                    </div>
-
-                    {/* Chat Input form */}
-                    <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10 bg-black/10 flex gap-2">
-                      <input 
-                        type="text"
-                        placeholder="Type message to negotiate, ask details..."
-                        value={messageText}
-                        onChange={(e) => setMessageText(e.target.value)}
-                        className="flex-1 bg-[#151515] border border-white/10 focus:border-snookerGreen/50 focus:outline-none px-4 py-2.5 rounded-xl text-sm"
-                      />
-                      <button 
-                        type="submit"
-                        className="p-2.5 bg-snookerGreen hover:bg-snookerGreen/90 text-white rounded-xl transition-all shadow-md shadow-snookerGreen/10 flex items-center justify-center cursor-pointer"
-                      >
-                        <Send size={16} />
-                      </button>
-                    </form>
-                  </>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                    <MessageSquare size={36} className="text-white/10 mb-2 animate-pulse" />
-                    <h4 className="text-sm font-bold text-white/60">No conversation active</h4>
-                    <p className="text-xs text-white/30 max-w-xs mt-1">Select a negotiation thread on the left or click "Chat & Negotiate" on a product detail page to start.</p>
-                  </div>
-                )}
-              </div>
-
             </motion.div>
           </>
         )}
