@@ -16,6 +16,9 @@ export function Footer() {
           <Link href="/about" className="hover:text-snookerGreen transition-colors">
             About Us
           </Link>
+          <Link href="/download" className="hover:text-snookerGreen transition-colors">
+            Download App
+          </Link>
           <Link href="/privacy" className="hover:text-snookerGreen transition-colors">
             Privacy Policy
           </Link>

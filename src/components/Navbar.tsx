@@ -85,6 +85,7 @@ export function Navbar() {
               <Link href="/experience" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Experience</Link>
               <Link href="/live-desk" className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Live Desk</Link>
               <Link href="/shop" className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Shop</Link>
+              <Link href="/download" onClick={playHitSound} className="text-white/70 hover:text-white transition-colors px-2 py-2 rounded-md text-sm font-medium">Download App</Link>
 
               <div className="border-l border-white/20 pl-4 ml-2 flex items-center space-x-4 relative">
                 {isAuthenticated ? (
@@ -253,6 +254,7 @@ export function Navbar() {
               <Link href="/clubs" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Clubs</Link>
               <Link href="/experience" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Experience</Link>
               <Link href="/shop" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Shop</Link>
+              <Link href="/download" onClick={() => { playHitSound(); setIsMobileMenuOpen(false); }} className="text-white/70 hover:text-white block px-3 py-2 rounded-md text-base font-medium">Download App</Link>
               <div className="border-t border-white/10 mt-4 pt-4 pb-2">
                 {isAuthenticated ? (
                   <>

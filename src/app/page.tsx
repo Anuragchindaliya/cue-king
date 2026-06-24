@@ -7,6 +7,7 @@ import { Shop } from '@/components/Shop';
 import { GamingFacility } from '@/components/GamingFacility';
 import { Location } from '@/components/Location';
 import { Tournaments } from '@/components/Tournaments';
+import { DownloadSection } from '@/components/DownloadSection';
 
 // This is fully server rendered. 
 // Animations and interactivities are isolated in the Client Components correctly.
@@ -21,6 +22,7 @@ export default function Home() {
         <Gallery />
         <Leaderboard />
         <Tournaments />
+        <DownloadSection />
       </div>
 
       <Shop />
